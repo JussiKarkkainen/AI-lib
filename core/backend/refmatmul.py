@@ -3,7 +3,7 @@ import os
 import numpy as np
 import time
 
-os.environ['OPENBLAS_NUM_THREADS'] = '1'
+os.environ['OMP_NUM_THREADS'] = '1'
 
 N = 2048
 
@@ -18,7 +18,7 @@ if __name__ == "__main__":
     for i in range(100):
         tb = time.perf_counter()
         #C = np.matmul(a, b)
-        C = a @ b
+        C = a @ b                   # Doesn't matter wich one is used, both get numpy optimization
         te = time.perf_counter()
 
         s = te - tb

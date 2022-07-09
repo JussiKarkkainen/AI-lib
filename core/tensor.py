@@ -1,4 +1,5 @@
 import numpy as np
+from core.autograd import backward
 
 class Tensor:
     def __init__(self, data, requires_grad=True):
@@ -12,7 +13,13 @@ class Tensor:
 
     # Functions for creating tensors #
     # Same ones as https://pytorch.org/cppdocs/notes/tensor_creation.html #
-    
+
+
+    def backward(self, grad=None, create_graph=False).
+        ''' Compute the gradient of current tensor'''
+        return backward(self, gradient, create_graph);
+
+
     @classmethod 
     #def arange(self, start=0, end, step=1, *, out=None, 
      #          device=None, requires_grad=False) -> Tensor:
