@@ -37,8 +37,7 @@ if __name__ == "__main__":
 
     for epoch in range(10):
         for X, y in zip(train_iter, train_labels):
-            y_hat = mlp(torch.from_numpy(X))
-            l = loss(y_hat, y)
+            l = loss(mlp(torch.from_numpy(X)), y)
             l.backward()
             optim.zero_grad()
             optim.step()

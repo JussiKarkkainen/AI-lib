@@ -11,11 +11,15 @@ class Tensor:
         return f"<Tensor: data={self.data} Grad={self.grad}>"
         
 
+    # Functions for creating tensors #
+    # Same ones as https://pytorch.org/cppdocs/notes/tensor_creation.html #
+
+
     def backward(self, grad=None, create_graph=False):
         ''' Compute the gradient of current tensor'''
         return backward(self, gradient, create_graph)
 
-    # Functions for creating tensors #
+
     @classmethod 
     def arange(cls, end, start=0, **kwargs):
         return cls(np.arange(start, end).astype(np.float32), **kwargs)
@@ -39,16 +43,3 @@ class Tensor:
     @classmethod
     def zeros(cls, *shape, **kwargs):
         return cls(np.zeros(shape, dtype=np.float32), **kwargs)
-
-    def matmul(self,
-
-    def mul(self, x):
-
-    def div(self, x):
-        return (self * (x ** -1.0)
-    
-    def add(self, x):
-    
-    def sub(self, x):
-    
-    def pow(self, x):
