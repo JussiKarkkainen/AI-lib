@@ -1,5 +1,5 @@
 import numpy as np
-from core.autograd import backward
+from core.autograd.backprop import backward
 
 class Tensor:
     def __init__(self, data, requires_grad=True):
@@ -15,72 +15,31 @@ class Tensor:
     # Same ones as https://pytorch.org/cppdocs/notes/tensor_creation.html #
 
 
-    def backward(self, grad=None, create_graph=False).
+    def backward(self, grad=None, create_graph=False):
         ''' Compute the gradient of current tensor'''
-        return backward(self, gradient, create_graph);
+        return backward(self, gradient, create_graph)
 
 
     @classmethod 
-    #def arange(self, start=0, end, step=1, *, out=None, 
-     #          device=None, requires_grad=False) -> Tensor:
-               
-        #self.size = (end-start)/step
+    def arange(cls, end, start=0, **kwargs):
+        return cls(np.arange(start, end).astype(np.float32), **kwargs)
     
     @classmethod
-    def empty(cls, **kwargs):
-        pass
+    def eye(cls, dim, **kwargs):
+        return cls(np.eye(dim).astype(np.float32), **kwargs)
     
     @classmethod
-    def eye(cls, **kwargs):
-        pass 
+    def ones(cls, *shape, **kwargs):
+        return cls(np.ones(shape, dtype=np.float32), **kwargs) 
     
     @classmethod
-    def full(cls, **kwargs):
-        pass 
+    def rand(cls, *shape, **kwargs):
+        return cls(np.random.rand(*shape).astype(np.float32), **kwargs)
+
+    @classmethod
+    def randn(cls, *shape, **kwargs):
+        return cls(np.random.randn(*shape).astype(np.float32), **kwargs)
     
     @classmethod
-    def linspace(cls, **kwargs):
-        pass 
-    
-    @classmethod
-    def logspace(cls, **kwargs):
-        pass 
-    
-    @classmethod
-    def ones(cls, **kwargs):
-        pass 
-    
-    @classmethod
-    def rand(cls, **kwargs):
-        pass
-    
-    @classmethod
-    def randint(cls, **kwargs):
-        pass
-    
-    @classmethod
-    def randn(cls, **kwargs):
-        pass 
-    
-    @classmethod
-    def randperm(cls, **kwargs):
-        pass 
-    
-    @classmethod
-    def zeros(cls, *shape):
-        return np.zeros(shape, dtype=np.float32)
-    
-    
-
-
-
-
-
-
-
-
-
-
-
-
-
+    def zeros(cls, *shape, **kwargs):
+        return cls(np.zeros(shape, dtype=np.float32), **kwargs)
