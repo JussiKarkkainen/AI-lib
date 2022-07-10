@@ -2,11 +2,13 @@ import numpy as np
 from core.autograd.backprop import backward
 
 class Tensor:
-    def __init__(self, data, device='cpu', requires_grad=True):
+    def __init__(self, data, device=None, creators=None, creator_op=None, requires_grad=True):
         self.data = data
         self.grad = 0
         self.requires_grad = requires_grad
-        slef.device = device
+        self.device = device
+        self.creators = creators
+        self.creator_op = creator_op
 
     def __repr__(self):
         return f"<Tensor: data={self.data} Grad={self.grad}>"
@@ -19,13 +21,16 @@ class Tensor:
     def shape(self):
         return np.shape(self.data)
 
-    @property
-    def device(self)
+    def device(self):
         return self.device
 
-    def backward(self, grad=None, create_graph=False):
-        ''' Compute the gradient of current tensor'''
-        return backward(self, grad, create_graph)
+    def backward(self, grad=None):
+        self.grad = grad
+
+        if self.creator_op == "add":
+            self.creators[0].backward(grad)
+            self.creators[1].backward(grad)
+
 
     # Functions for basic ops # 
     def __mul__(self, x):
@@ -33,7 +38,9 @@ class Tensor:
         return out
 
     def __add__(self, x):
-        return Tensor(self.data + x.data)
+        return Tensor(self.data + x.data,
+                      creators=(self, x),
+                      creator_op="add")
 
     def __sub__(self, x):
         out = Tensor(self.data - x.data)
@@ -46,7 +53,6 @@ class Tensor:
         return Tensor(self.data ** x) 
 
     # Functions for creating tensors #
-    # Same ones as https://pytorch.org/cppdocs/notes/tensor_creation.html #
 
     @classmethod 
     def arange(cls, end, start=0, **kwargs):
