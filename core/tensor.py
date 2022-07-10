@@ -34,6 +34,8 @@ class Tensor:
         if self.creator_op == "sub":
         if self.creator_op == "neg":
         if self.creator_op == "pow":
+        if self.creator_op == "transpose":
+        if self.creator_op == "expand":
 
 
     # Functions for basic ops # 
@@ -60,7 +62,14 @@ class Tensor:
     def __pow__(self, x):
         return Tensor(self.data ** x,
                       creators=[self],
-                      creator_op = "pow") 
+                      creator_op = "pow")
+
+    def transpose(self):
+        return Tensor(self.data.transpose(),
+                      creators=[self],
+                      creator_op="transpose")
+    
+    def expand(self, dim): 
 
     # Functions for creating tensors #
 
