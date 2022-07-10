@@ -30,12 +30,17 @@ class Tensor:
         if self.creator_op == "add":
             self.creators[0].backward(grad)
             self.creators[1].backward(grad)
+        if self.creator_op == "mul":
+        if self.creator_op == "sub":
+        if self.creator_op == "neg":
+        if self.creator_op == "pow":
 
 
     # Functions for basic ops # 
     def __mul__(self, x):
-        out = Tensor(self.data * x.data)
-        return out
+        return Tensor(self.data * x.data,
+                      creators=(self, x),
+                      creator_op="mul")
 
     def __add__(self, x):
         return Tensor(self.data + x.data,
@@ -43,14 +48,19 @@ class Tensor:
                       creator_op="add")
 
     def __sub__(self, x):
-        out = Tensor(self.data - x.data)
-        return out
+        return Tensor(self.data - x.data,
+                      creators=(self, x),
+                      creator_op="sub")
 
     def __neg__(self):
-        return self.data * (-1)
+        return Tensor(self.data * (-1),
+                      creators=[self],
+                      creator_op="neg")
 
     def __pow__(self, x):
-        return Tensor(self.data ** x) 
+        return Tensor(self.data ** x,
+                      creators=[self],
+                      creator_op = "pow") 
 
     # Functions for creating tensors #
 
