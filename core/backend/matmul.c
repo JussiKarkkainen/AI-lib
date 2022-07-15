@@ -5,8 +5,8 @@
 #include <time.h>
 
 #define N 1024ULL           // Size of matrix
-#define block_size 16       
-//#define N (N / block_size)  // number of blocks
+#define bs 16 
+#define num_blocks (N / bs)  // number of blocks
 
 void matmul(); 
 
@@ -22,18 +22,24 @@ float B[N][N] __attribute__((aligned (32)));
 
 void matmul() {
 
-    for (int i = 0; i < N; i++) {
-        for (int j = 0; j < N; j++) {
-            C[i][j] = 0;
-            for (int k = 0; k < N; k++) {
-                C[i][j] += A[i][k] * B[k][j];
+    for (int ii = 0; ii < N; ii+=bs) {
+        for (int jj = 0; jj < N; jj+=bs) {
+            for (int kk = 0; kk < N; kk+=bs) {
+                for (int i = 0; i < bs; i++) {
+                    for (int j = 0; j < bs; j++) {
+                        for (int k = 0; k < bs; k++) {
+                            C[ii+i][jj+j] += A[ii+i][kk+k] * B[kk+k][jj+j];
+                
+                        }
+                    }
+                }
             }
         }
     }
 }
 
 int main() {
-
+    printf("starting\n");
 
     for (int u = 0; u <= 10; u++) {    
         uint64_t st = timer();
