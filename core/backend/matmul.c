@@ -41,6 +41,12 @@ void matmul() {
 int main() {
     printf("starting\n");
 
+    for (int i=0; i<N; i++) {
+        for (int j=0; j<N; j++) {
+            A[i][j] = 1;
+            B[i][j] = 2;
+        }
+    } 
     for (int u = 0; u <= 10; u++) {    
         uint64_t st = timer();
         matmul(A, B, C);
@@ -51,6 +57,6 @@ int main() {
         printf("GFLOPS %f\n", (flop / s));
 
     }
-
+    
     return 0;
 }
