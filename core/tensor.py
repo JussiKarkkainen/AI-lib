@@ -1,5 +1,7 @@
 import numpy as np
 from core.autograd.backprop import backward
+import graph
+import ops
 
 class Tensor:
     def __init__(self, data, device=None, creators=None, creator_op=None, requires_grad=True):
@@ -23,53 +25,11 @@ class Tensor:
 
     def device(self):
         return self.device
-
-    def backward(self, grad=None):
-        self.grad = grad
-
-        if self.creator_op == "add":
-            self.creators[0].backward(grad)
-            self.creators[1].backward(grad)
-        if self.creator_op == "mul":
-        if self.creator_op == "sub":
-        if self.creator_op == "neg":
-        if self.creator_op == "pow":
-        if self.creator_op == "transpose":
-        if self.creator_op == "expand":
-
-
-    # Functions for basic ops # 
-    def __mul__(self, x):
-        return Tensor(self.data * x.data,
-                      creators=(self, x),
-                      creator_op="mul")
-
-    def __add__(self, x):
-        return Tensor(self.data + x.data,
-                      creators=(self, x),
-                      creator_op="add")
-
-    def __sub__(self, x):
-        return Tensor(self.data - x.data,
-                      creators=(self, x),
-                      creator_op="sub")
-
-    def __neg__(self):
-        return Tensor(self.data * (-1),
-                      creators=[self],
-                      creator_op="neg")
-
-    def __pow__(self, x):
-        return Tensor(self.data ** x,
-                      creators=[self],
-                      creator_op = "pow")
-
-    def transpose(self):
-        return Tensor(self.data.transpose(),
-                      creators=[self],
-                      creator_op="transpose")
     
-    def expand(self, dim): 
+    def topological_sort(head_node=None, graph=_g):
+        pass
+
+
 
     # Functions for creating tensors #
 
