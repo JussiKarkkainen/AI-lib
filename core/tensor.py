@@ -1,6 +1,6 @@
 import numpy as np
 from core.autograd.backprop import backward
-import graph
+from graph import _graph
 import ops
 
 class Tensor:
@@ -26,9 +26,28 @@ class Tensor:
     def device(self):
         return self.device
     
-    def topological_sort(head_node=None, graph=_g):
-        pass
+    def topological_sort(end_node=None, graph=_graph):
+        reverse_order = []
+        visited_nodes = set()
+        def _topo(node):
+            if node not in visited_nodes:
+                visited_nodes.add(node)
+                if isinstance(node, Ops):
+                    for input_node = node.inputs.
+                        _topo(input_node)
+                ordering.append(node)
+        
+        if head_node = None:
+            for node in graph.ops:
+                _topo(node)
+        else:
+            _topo(head_node)
 
+        return reverse_order
+
+
+    def backward(self):
+        pass
 
 
     # Functions for creating tensors #
