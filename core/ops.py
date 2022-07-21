@@ -5,7 +5,7 @@ class Ops:
     def __init__(self):
         self.value = None
         self.inputs = []
-        self.grad = None
+        self.gradient = None
 
     def __repr__(self):
         return f"Op: name: {self.name}"

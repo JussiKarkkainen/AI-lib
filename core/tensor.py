@@ -27,7 +27,7 @@ class Tensor:
         return self.device
     
     def topological_sort(end_node=None, graph=_graph):
-        reverse_order = []
+        order = []
         visited_nodes = set()
         def _topo(node):
             if node not in visited_nodes:
@@ -43,11 +43,30 @@ class Tensor:
         else:
             _topo(head_node)
 
-        return reverse_order
+        return reversed(order)
 
 
-    def backward(self):
-        pass
+    def backward(graph, end_node):
+        '''
+        Calculate the backward pass:
+        graph: topologically ordered array of graph nodes. The gradient of the final
+               node is set to 1.
+        Function returns gradients of nodes in the same order as the input arg
+        '''
+
+        graph[-1].grad = 1
+        visited = set()
+        for node in toposort(end_node):
+            if isinstance(node, Ops):
+                inputs = node.inputs
+                grads = node.backward(*[x.value for x in inputs], dout=node.gradient)
+                for ins, grad in zip(inputs, grads):
+                    if ins not in visited:
+                        ins.gradient = grad
+                    else:
+                        ins.gradient += grad
+                    visited.add(ins)
+        return [node.gradient for node in order]
 
 
     # Functions for creating tensors #
