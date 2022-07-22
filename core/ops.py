@@ -37,17 +37,23 @@ class Graph:
         _graph = self
     
 
-class Ops(Tensor):
+class Function:
     def __init__(self, name='Operator'):
         _graph.ops.add(self)
         self.value = None
         self.inputs = []
         self.gradient = None
+    
+    def forward(self):
+        raise NotImplementedError
+
+    def backward(self):
+        raise NotImplementedError
 
     def __repr__(self):
         return f"Op: name: {self.name}"
         
-class Add(Ops):
+class Add(Function):
     add_counter = 0
     def __init__(self, x, y, name=None):
         super().__init__(name)
@@ -61,7 +67,7 @@ class Add(Ops):
     def backward(self, x, y, dout):
         return dout, dout        
 
-class Mul(Ops):
+class Mul(Function):
     mul_counter = 0
     def __init__(self, x, y, name=None):
         super().__init__(name)
@@ -75,7 +81,7 @@ class Mul(Ops):
     def backward(self, x, y, dout):
         return x*dout, y*dout
 
-class Div(Ops):
+class Div(Function):
     div_counter = 0
     def __init__(self, x, y, name=None):
         super().__init__(name)
@@ -89,7 +95,7 @@ class Div(Ops):
     def backward(self, x, y, dout):
         return dout/y, dout*x/y**2
 
-class Pow(Ops):
+class Pow(Function):
     pow_counter = 0
     def __init__(self, x, y, name=None):
         self.inputs = [x, y]
@@ -102,7 +108,7 @@ class Pow(Ops):
     def backward(self, x, y, dout):
         return dout*y*x**(y-1), dout*np.log(a)*x**Y
 
-class Matmul(Ops):
+class Matmul(Function):
     matmul_counter = 0
     def __init__(self, x, y, name=None):
         self.inputs = [x, y]

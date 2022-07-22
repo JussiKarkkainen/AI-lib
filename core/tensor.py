@@ -1,7 +1,6 @@
 import numpy as np
 from ops import _graph
 
-
 class Tensor:
     def __init__(self, data, device=None, requires_grad=True):
         if isinstance(data, list):

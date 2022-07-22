@@ -3,6 +3,9 @@ class Optim:
     def __init__(self, params, weight_decay=0):
         self.params = params
         self.weight_decay = weight_decay
+    
+    def step(self):
+        raise NotImplementedError
 
     def zero_grad(self):
         for param in self.params:
