@@ -1,16 +1,16 @@
 import numpy as np
-from core.autograd.backprop import backward
-from graph import _graph
-import ops
+from ops import _graph
+
 
 class Tensor:
-    def __init__(self, data, device=None, creators=None, creator_op=None, requires_grad=True):
-        self.data = data
+    def __init__(self, data, device=None, requires_grad=True):
+        if isinstance(data, list):
+            data = np.array(data, dtype=np.float32)
+        else:
+            self.data = data
         self.grad = 0
         self.requires_grad = requires_grad
         self.device = device
-        self.creators = creators
-        self.creator_op = creator_op
 
     def __repr__(self):
         return f"<Tensor: data={self.data} Grad={self.grad}>"
@@ -33,20 +33,20 @@ class Tensor:
             if node not in visited_nodes:
                 visited_nodes.add(node)
                 if isinstance(node, Ops):
-                    for input_node = node.inputs.
+                    for input_node in node.inputs:
                         _topo(input_node)
                 ordering.append(node)
         
-        if head_node = None:
+        if head_node == None:
             for node in graph.ops:
                 _topo(node)
         else:
             _topo(head_node)
 
-        return reversed(order)
+        return order
 
 
-    def backward(graph, end_node):
+    def backward(graph, end_node=None):
         '''
         Calculate the backward pass:
         graph: topologically ordered array of graph nodes. The gradient of the final
@@ -56,7 +56,7 @@ class Tensor:
 
         graph[-1].grad = 1
         visited = set()
-        for node in toposort(end_node):
+        for node in reversed(toposort(end_node)):
             if isinstance(node, Ops):
                 inputs = node.inputs
                 grads = node.backward(*[x.value for x in inputs], dout=node.gradient)
@@ -67,6 +67,10 @@ class Tensor:
                         ins.gradient += grad
                     visited.add(ins)
         return [node.gradient for node in order]
+
+
+    def __getitem__(self, key):
+        return key
 
 
     # Functions for creating tensors #
@@ -94,3 +98,5 @@ class Tensor:
     @classmethod
     def zeros(cls, *shape, **kwargs):
         return cls(np.zeros(shape, dtype=np.float32), **kwargs)
+
+
