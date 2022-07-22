@@ -1,4 +1,27 @@
 from tensor import Tensor
+from ops import Function
+import numpy as np
+
+class Linear(Function):
+    def __init__(self, in_nodes, out_nodes):
+        self.weights = Tensor.randn((in_nodes, out_nodes))
+        self.bias = Tensor.zeros((out_nodes))
+        self.type = 'Linear'
+
+    def forward(self, x):
+        self.input = x
+        return np.dot(self.input, self.weights.data) + self.bias
+        
+    def backward(self, d_y):
+        self.weights.grad += np.dot(self.input.T, d_y)
+        self.bias.grad += np.sum(d_y, axis=0, keepdim=True)
+        grad_input = np.dot(d_y, self.weights.data.T)
+        return grad_input
+
+    def get_params(self):
+        return [self.weights, self.bias]
+
+
 
 class Model:
     ''' Class for making a model '''
