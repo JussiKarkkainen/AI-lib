@@ -1,8 +1,7 @@
 
 class Optim:
-    def __init__(self, params, weight_decay=0):
+    def __init__(self, params):
         self.params = params
-        self.weight_decay = weight_decay
     
     def step(self):
         raise NotImplementedError
@@ -14,34 +13,26 @@ class Optim:
  
 # https://pytorch.org/docs/stable/generated/torch.optim.SGD.html
 class SGD(Optim):
-    def __init__(self, params, lr, momentum=0, dampening=0, 
-                 nesterov=False, maximize=False):
+    def __init__(self, params, lr, momentum=0, weight_decay=0.0):
         super().__init__()
         self.lr = lr
         self.momentum = momentum
-        self.dampening = dampening
-        self.nesterov = nesterov
-        self.maximize = maximize
+        self.weight_decay = weight_decay
+        
+        self.velocity[]
+        for param = params:
+            self.velocity.append(np.zeros_like(param.grad)
 
     def step(self):
-        for param in self.params:
-            if self.weight_decay:
-                param.grad += self.weight_decay * param
-            # TO-DO: implement momentum
-            '''
-            if momentum:
-               if nesterov
-            '''
-            if self.maximize:
-                param += self.lr * param.grad
-            else
-                param -= self.lr * param.grad  
+        for param, v in zip(self.params, self.velocity):
+            v = self.momentum * self.velocity + param.grad + self.weight_decay * param.grad
+            param -= self.lr * v
 
 # Values for arguments:
 # https://pytorch.org/docs/stable/generated/torch.optim.RMSprop.html
 class RMSprop(Optim):
     def __init__(self, params, lr=0.01, alpha=0.99, eps=1e-8, 
-                 momentum=0, centered=False):
+                 weight_decay = 0.0, momentum=0, centered=False):
         super().__init__()
         self.lr = lr
         self.alpha = alpha
@@ -50,8 +41,8 @@ class RMSprop(Optim):
         self.centered = centered
 
 
-    def step(self)
-
+    def step(self):
+        pass
 
 class Adam(Optim):
     def __init__(self, betas=(0.9, 0.999), eps=1e-8, amsgrad=False, maximize=False):
@@ -63,5 +54,6 @@ class Adam(Optim):
 
 
     def step(self):
+        pass
 
 
