@@ -1,7 +1,7 @@
 import numpy as np
 
 class Tensor:
-    def __init__(self, data, creators=None, creator_op=None, device=None, requires_grad=True,
+    def __init__(self, data, creators=None, creator_op=None, device=None, requires_grad=False,
                  ident=None):
         if isinstance(data, list):
             self.data = np.array(data, dtype=np.float32)
@@ -66,9 +66,10 @@ class Tensor:
                     grad_origin is None):
 
                 if self.creator_op == "add":
-                    self.creators[0].backward(grad)
-                    self.creators[1].backward(grad)
-
+                    self.creators[0].backward(self.grad, self)
+                    self.creators[1].backward(self.grad, self)
+                if self.creato_op == "neg":
+                    self.creators[0].backward(self.grad.__neg__())
 
     def __add__(self, other):
         if (self.requires_grad and other.requires_grad):
@@ -76,6 +77,54 @@ class Tensor:
                           requires_grad=True)
 
         return Tensor(self.data + other.data)
+    
+    def __neg__(self):
+        if self.requires_grad:
+            return Tensor(self.data * -1, creators=[self], creator_op="neg",
+                          requires_grad=True)
+
+        return Tensor(self.data * -1)
+
+    def __sub__(self, other):
+        if (self.requires_grad and other.requires_grad):
+            return Tensor(self.data - other.data, creators=[self, other], creator_op="sub",
+                          requires_grad=True)
+
+        return Tensor(self.data - other.data)
+
+    def __mul__(self, other):
+        if (self.requires_grad and other.requires_grad):
+            return Tensor(self.data * other.data, creators=[self, other], creator_op="mul",
+                          requires_grad=True)
+
+        return Tensor(self.data * other.data)
+
+    def sum(self, dim):
+        if self.requires_grad:
+            return Tensor(self.data.sum(dim), creators=[self], creator_op="sum",
+                          requires_grad=True)
+
+        return Tensor(self.data.sum(dim))
+
+    def transpose(self):
+        if self.requires_grad:
+            return Tensor(self.data.transpose(), creators=[self], creator_op="transpose",
+                          requires_grad=True)
+
+        return Tensor(self.data.transpose())
+    
+    def expand(self, dim, copies):
+        trans_cmd = list(range(0,, len(self.data.shape)))
+        trans_cmd.insert(dim, len(self.data.shape))
+        new_shape = list(self.data.shape) + [copies]
+        new_data = self.data.repeat(copies).reshape(new_shape)
+        new_data = new_data.transpose(trans_cmd)
+
+        if self.requires_grad:
+            return Tensor(new_data, creators=[self], creator_op="expand " + str(dim),
+                          requires_grad=True)
+
+        return Tensor(new_data)
 
     '''    
     def topological_sort(end_node=None, graph=_graph):
