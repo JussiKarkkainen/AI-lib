@@ -68,8 +68,35 @@ class Tensor:
                 if self.creator_op == "add":
                     self.creators[0].backward(self.grad, self)
                     self.creators[1].backward(self.grad, self)
-                if self.creato_op == "neg":
+                if self.creator_op == "neg":
                     self.creators[0].backward(self.grad.__neg__())
+                if self.creator_op == "sub":
+                    new = Tensor(self.grad.data)
+                    self.creators[0].backward(new, self)
+                    new = Tensor(self.grad.__neg__().data)
+                    self.creators[1].backward(new, self)
+                if self.creator_op == "mul":
+                    new = self.grad * self.creators[1]
+                    self.creators[0].backward(new , self)
+                    new = self.grad * self.creators[0]
+                    self.creators[1].backward(new, self)
+                if self.creator_op == "matmul":
+                    act = self.creators[0]
+                    weigths = self.creators[1]
+                    new = self.grad.matmul(weights.transpose())
+                    act.backward(new)
+                    new = self.grad.transpose().matmul(act).transpose()
+                    weights.backward(new)
+                if self.creator_op == "transpose":
+                    self.creators[0].backward(self.grad.transpose())
+                if "sum" in self.creator_op:
+                    dim = int(self.creation_op.split("_")[1])
+                    ds = self.creators[0].data.shape[dim]
+                    self.creators[0].backward(self.grad.expand(dim, ds))
+                if "expand" in self.creator_op:
+                    dim = int(self.creation_op.split("_")[1])
+                    self.creators[0].backward(self.grad.sum(dim))
+
 
     def __add__(self, other):
         if (self.requires_grad and other.requires_grad):
@@ -125,6 +152,13 @@ class Tensor:
                           requires_grad=True)
 
         return Tensor(new_data)
+    
+    def matmul(self, other):
+        if self.requires_grad:
+            return Tensor(self.data.dot(other.data), creators=[self, other], creator_op="matmul",
+                          requires_grad=True)
+        
+        return Tensor(self.data.dot(other.data))
 
     '''    
     def topological_sort(end_node=None, graph=_graph):
