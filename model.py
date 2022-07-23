@@ -1,6 +1,7 @@
 from tensor import Tensor
 from ops import Function
 import numpy as np
+from loss import CrossEntropyLoss, MSEloss
 
 class Linear(Function):
     def __init__(self, in_nodes, out_nodes):
@@ -34,7 +35,7 @@ class Model:
         self.computation_graph.append(layer)
         self.parameters += layer.get_params()
 
-    def initalize_net(self):
+    def _initalize_net(self):
         for l in self.computation_graph:
             weights, bias = l.get_params()
             weights.data = Tensor.randn(weights.data.shape)
@@ -42,7 +43,18 @@ class Model:
 
 
     def train(self, data, target, batch_size, num_epochs, optim, loss_fn):
-        
+        self._initialize_net()        
+        losses = []
+
+        for epoch in range(num_epochs):
+            for X, y in zip(data, target):
+                optim.zero_grad()
+                for l in self.computation_graph:
+                    out = l.forward(X)
+                    loss = loss_fn(out)
+                    loss.backward()
+                    optim.step()
+                    
 
 
-    def predict(self, data):
+
