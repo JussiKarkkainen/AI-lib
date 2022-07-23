@@ -3,7 +3,7 @@ from ops import Function
 import numpy as np
 from loss import CrossEntropyLoss, MSEloss
 
-class Linear(Function):
+class Linear(Layer):
     def __init__(self, in_nodes, out_nodes):
         self.weights = Tensor.randn((in_nodes, out_nodes))
         self.bias = Tensor.zeros((out_nodes))
