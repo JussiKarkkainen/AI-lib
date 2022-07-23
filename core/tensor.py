@@ -1,15 +1,31 @@
 import numpy as np
-from ops import _graph
 
 class Tensor:
-    def __init__(self, data, device=None, requires_grad=True):
+    def __init__(self, data, creators=None, creator_op=None, device=None, requires_grad=True,
+                 ident=None):
         if isinstance(data, list):
-            data = np.array(data, dtype=np.float32)
+            self.data = np.array(data, dtype=np.float32)
         else:
             self.data = data
-        self.grad = 0
+        self.grad = None
         self.requires_grad = requires_grad
         self.device = device
+        self.creators = creators
+        self.creator_op = creator_op
+        self.children= {}
+
+        # There should be a better way to do this
+        if ident == None:
+            ident = np.random.randint(0, 100000)
+        self.ident = ident
+
+        if creators is not None:
+            for creator in creators:
+                if self.ident not in creator.children:
+                    creator.children[self.ident] = 1
+                else:
+                    creator.children[self.ident] += 1
+
 
     def __repr__(self):
         return f"<Tensor: data={self.data} Grad={self.grad}>"
@@ -24,7 +40,44 @@ class Tensor:
 
     def device(self):
         return self.device
+
+    def all_children_accounted_for(self):
+        for ident, cnt in self.children.items():
+            if cnt != 0:
+                return False
+            else:
+                return True
     
+    '''
+    This is a temporary implementation, a more refined one will come later
+    '''
+    def backward(self, grad=None, grad_origin=None):
+        if self.requires_grad:
+            if grad_origin is not None:
+                if self.children[grad_origin.ident] == 0:
+                    raise Exception("Cannot backpropagate more than once")
+                else:
+                    self.children[grad_origin.ident] -= 1
+            if self.grad == None:
+                self.grad = grad
+            else:
+                self.grad += grad
+            if self.creators is not None and (self.all_children_accounted_for() or 
+                    grad_origin is None):
+
+                if self.creator_op == "add":
+                    self.creators[0].backward(grad)
+                    self.creators[1].backward(grad)
+
+
+    def __add__(self, other):
+        if (self.requires_grad and other.requires_grad):
+            return Tensor(self.data + other.data, creators=[self, other], creator_op="add",
+                          requires_grad=True)
+
+        return Tensor(self.data + other.data)
+
+    '''    
     def topological_sort(end_node=None, graph=_graph):
         order = []
         visited_nodes = set()
@@ -46,12 +99,12 @@ class Tensor:
 
 
     def backward(graph, end_node=None):
-        '''
+        
         Calculate the backward pass:
         graph: topologically ordered array of graph nodes. The gradient of the final
                node is set to 1.
         Function returns gradients of nodes in the same order as the input arg
-        '''
+        
 
         graph[-1].grad = 1
         visited = set()
@@ -67,11 +120,8 @@ class Tensor:
                     visited.add(ins)
         return [node.gradient for node in order]
 
-
-    def __getitem__(self, key):
-        return key
-
-
+    '''
+    
     # Functions for creating tensors #
 
     @classmethod 
