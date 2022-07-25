@@ -53,6 +53,8 @@ class Tensor:
     '''
     def backward(self, grad=None, grad_origin=None):
         if self.requires_grad:
+            if self.grad == None:
+                grad = Tensor(np.ones_like(self.data))
             if grad_origin is not None:
                 if self.children[grad_origin.ident] == 0:
                     raise Exception("Cannot backpropagate more than once")
@@ -82,7 +84,7 @@ class Tensor:
                     self.creators[1].backward(new, self)
                 if self.creator_op == "matmul":
                     act = self.creators[0]
-                    weigths = self.creators[1]
+                    weights = self.creators[1]
                     new = self.grad.matmul(weights.transpose())
                     act.backward(new)
                     new = self.grad.transpose().matmul(act).transpose()
@@ -90,7 +92,7 @@ class Tensor:
                 if self.creator_op == "transpose":
                     self.creators[0].backward(self.grad.transpose())
                 if "sum" in self.creator_op:
-                    dim = int(self.creation_op.split("_")[1])
+                    dim = int(self.creator_op.split("_")[1])
                     ds = self.creators[0].data.shape[dim]
                     self.creators[0].backward(self.grad.expand(dim, ds))
                 if "expand" in self.creator_op:
@@ -128,7 +130,7 @@ class Tensor:
 
     def sum(self, dim):
         if self.requires_grad:
-            return Tensor(self.data.sum(dim), creators=[self], creator_op="sum",
+            return Tensor(self.data.sum(dim), creators=[self], creator_op="sum_" + str(dim),
                           requires_grad=True)
 
         return Tensor(self.data.sum(dim))
@@ -141,14 +143,14 @@ class Tensor:
         return Tensor(self.data.transpose())
     
     def expand(self, dim, copies):
-        trans_cmd = list(range(0,, len(self.data.shape)))
+        trans_cmd = list(range(0, len(self.data.shape)))
         trans_cmd.insert(dim, len(self.data.shape))
         new_shape = list(self.data.shape) + [copies]
         new_data = self.data.repeat(copies).reshape(new_shape)
         new_data = new_data.transpose(trans_cmd)
 
         if self.requires_grad:
-            return Tensor(new_data, creators=[self], creator_op="expand " + str(dim),
+            return Tensor(new_data, creators=[self], creator_op="expand_" + str(dim),
                           requires_grad=True)
 
         return Tensor(new_data)

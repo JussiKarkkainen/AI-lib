@@ -52,7 +52,23 @@ class Function:
 
     def __repr__(self):
         return f"Op: name: {self.name}"
-        
+
+class ReLU(Function):
+    relu_counter = 0
+    def __init__(self, x, name=None):
+        super().__init__()
+        self.inputs = [x]
+        self.name = f"relu/num{ReLU.relu_counter}" if name is not None else name
+        ReLU.relu_counter += 1
+
+    def forward(self, x):
+        self.out = np.maximum(0, x)
+        return self.out
+    
+    def backward(self, grad):
+        return grad * np.clip(self.out, 0, 1)
+
+
 class Add(Function):
     add_counter = 0
     def __init__(self, x, y, name=None):
