@@ -3,19 +3,17 @@ from tensor import Tensor
 
 class Function:
     def __init__(self, name='Operator'):
-        _graph.ops.add(self)
-        self.value = None
-        self.inputs = []
-        self.gradient = None
+        self.saved_inputs = [] 
     
-    def forward(self):
+    def save_for_backward(self, *x):
+        self.saved_inputs.extend(x)
+
+    def forward(self, *args, **kwargs):
         raise NotImplementedError
 
-    def backward(self):
+    def backward(self, *args, **kwargs):
         raise NotImplementedError
 
-    def __repr__(self):
-        return f"Op: name: {self.name}"
 
 class ReLU(Function):
     def forward(self, x):
@@ -25,20 +23,19 @@ class ReLU(Function):
     def backward(self, grad):
         return grad * np.clip(self.out, 0, 1)
 
-
 class Add(Function):
     def forward(self, x, y):
         return x + y
 
-    def backward(self, x, y, dout):
-        return dout, dout        
+    def backward(self, grad_out):
+        return grad_out, grad_out  
 
 class Mul(Function):
     def forward(self, x, y):
         return x * y
 
-    def backward(self, x, y, dout):
-        return x*dout, y*dout
+    def backward(self, x, y, grad_out):
+        return x*grad_out, y*grad_out
 
 class Div(Function):
     def forward(self, x, y):
