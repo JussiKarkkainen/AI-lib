@@ -11,7 +11,31 @@ class BackPropTest:
         self.w = np.random.randn(3,3).astype(np.float32)
         self.m = np.random.randn(1,3).astype(np.float32)
 
-    def test_backprop(self):
+
+    def test_backprop_simple(self):
+        def test_backprop():
+            x = Tensor(self.x)
+            w = Tensor(self.w)
+            m = Tensor(self.m)
+            out = x.mul(w)
+            out = out.add(m)
+            out.backward()
+            return out.data, x.grad.data, w.grad.data
+
+        def test_backprop_torch():
+            x = torch.Tensor(self.x)
+            w = torch.Tensor(self.w)
+            m = torch.Tensor(self.m)
+            out = x.mul(w)
+            out = out.add(m)
+            out.backward()
+            return out.detach().numpy(), x.grad, w.grad 
+
+        for x, y in zip(test_backprop_own(), test_backprop_torch()):
+            np.testing.assert_allclose(x, y, atol=1e-5)
+
+
+    def test_backprop_harder(self):
         def test_backprop_own():
             x = Tensor(self.x)
             w = Tensor(self.w)
@@ -21,7 +45,7 @@ class BackPropTest:
             out.backward()
             return out.data, x.grad.data, w.grad.data
         
-        def test_backprop_torch():
+        def test_backprop_torch_harder():
             x = torch.tensor(self.x, requires_grad=True)
             w = torch.tensor(self.w, requires_grad=True)
             m = torch.tensor(self.m)
@@ -31,7 +55,6 @@ class BackPropTest:
             return out.detach().numpy(), x.grad, w.grad
         
         for x, y in zip(test_backprop_own(), test_backprop_torch()):
-            # This tests whether x and y are the same wihtin given tolerance atol
             np.testing.assert_allclose(x, y, atol=1e-5)
 
     
