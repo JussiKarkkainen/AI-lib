@@ -1,5 +1,4 @@
-from core.Tensor import Tensor
-from core.ops import ops
+from core.tensor import Tensor
 import numpy as np
 import torch
 

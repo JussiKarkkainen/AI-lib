@@ -1,5 +1,4 @@
 import numpy as np
-from tensor import Tensor
 
 class Function:
     def __init__(self, tensors, device=None):

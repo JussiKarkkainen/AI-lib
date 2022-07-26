@@ -1,4 +1,6 @@
 import numpy as np
+import core.ops
+from typing import Optional
 
 class Tensor:
     def __init__(self, data, device=None, requires_grad=True):
@@ -11,7 +13,7 @@ class Tensor:
         self.device = device
 
         # Used for storing computational graph
-        self._graph = None
+        self._graph : Optional[ops.Function] = None
 
 
     def __repr__(self):
@@ -51,7 +53,8 @@ class Tensor:
         visited = set()
         for node in reversed(self.topological_sort()):
             grads = node._graph.backward(node.grad.data)
-            
+            grads = [Tensor(g, device=self.device, requires_grad=False) if g is not None else None
+                for g in ([grads] if len(t0._ctx.parents) == 1 else grads)] 
             for ins, grad in zip(node._graph.parents, grads):
                 if ins is not None and grad.requires_grad:
                     ins.grad = grad if ins.grad is None else ins.grad+grad
