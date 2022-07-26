@@ -17,7 +17,6 @@ class BackPropTest:
             w = Tensor(self.w)
             m = Tensor(self.m)
             out = x.matmul(w).relu()
-            out = out.logsoftmax()
             out = out.mul(m).add(m).sum()
             out.backward()
             return out.data, x.grad.data, w.grad.data
@@ -27,7 +26,6 @@ class BackPropTest:
             w = torch.tensor(self.w, requires_grad=True)
             m = torch.tensor(self.m)
             out = x.matmul(w).relu()
-            out = torch.nn.functional.log_softmax(out, dim=1)
             out = out.mul(m).add(m).sum()
             out.backward()
             return out.detach().numpy(), x.grad, w.grad
@@ -45,7 +43,6 @@ class BackPropTest:
             x = u.mul(v).relu()
             y = u.mul(w).relu()
             out = x.add(y).mul(y).relu()
-            out = out.logsoftmax()
             out = out.sum()
             out.backward()
             return out.data, u.grad.data, v.grad.data, w.grad.data
@@ -57,16 +54,9 @@ class BackPropTest:
             x = u.mul(v).relu()
             y = u.mul(w).relu()
             out = x.add(y).mul(y).relu()
-            out = torch.nn.functional.log_softmax(out, dim=1)
             out = out.sum()
             out.backward()
             return out.detach().numpy(), u.grad, v.grad, w.grad
 
         for x, y in zip(test_backprop_own_diamond(), test_backprop_torch_diamond()):
             np.testing.assert_allclose(x, y, atol=1e-5)
-
-
-
-if __name__ == "__main__":
-    BackPropTest.test_backprop()
-    BackPropTest.test_backprop_diamond()
