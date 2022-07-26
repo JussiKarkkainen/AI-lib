@@ -29,35 +29,33 @@ class Tensor:
         return self.device
 
     
-    def topological_sort(node=_graph):
+    def topological_sort(self):
         order = []
         visited_nodes = set()
         def _topo(node):
             if node not in visited_nodes:
                 visited_nodes.add(node)
                 if node._graph: 
-                    for input_node in node.inputs:
-                        _topo(input_node)
+                    for ctx in node._graph.parents:
+                        if ctx not in visited:
+                            _topo(ctx)
                 order.append(node)
         
             return order
 
 
-    def backward(graph, end_node=None):
+    def backward(self):
         
-        graph[-1].grad = 1
+        self.grad = Tensor.ones(self.shape, requires_grad=False)
+
         visited = set()
-        for node in reversed(toposort(end_node)):
-            if isinstance(node, Ops):
-                inputs = node.inputs
-                grads = node.backward(*[x.value for x in inputs], dout=node.gradient)
-                for ins, grad in zip(inputs, grads):
-                    if ins not in visited:
-                        ins.gradient = grad
-                    else:
-                        ins.gradient += grad
-                    visited.add(ins)
-        return [node.gradient for node in order]
+        for node in reversed(self.topological_sort()):
+            grads = node._graph.backward(node.grad.data)
+            
+            for ins, grad in zip(node._graph.parents, grads):
+                if ins is not None and grad.requires_grad:
+                    ins.grad = grad if ins.grad is None else ins.grad+grad
+                    
 
     # Functions for creating tensors 
     @classmethod 

@@ -2,7 +2,9 @@ import numpy as np
 from tensor import Tensor
 
 class Function:
-    def __init__(self, name='Operator'):
+    def __init__(self, tensors, device=None):
+        self.parents = tensors
+        self.device = device
         self.saved_inputs = [] 
     
     def save_for_backward(self, *x):
@@ -17,6 +19,7 @@ class Function:
 
 class ReLU(Function):
     def forward(self, x):
+        save_for_backward(x)
         self.out = np.maximum(0, x)
         return self.out
     
@@ -32,6 +35,7 @@ class Add(Function):
 
 class Mul(Function):
     def forward(self, x, y):
+        save_for_backward(x, y)
         return x * y
 
     def backward(self, x, y, grad_out):
@@ -53,6 +57,7 @@ class Pow(Function):
 
 class Matmul(Function):
     def forward(self, x, y):
+        save_for_backward(x, y)
         return x @ y
 
     def backward(self, x, y, dout):
