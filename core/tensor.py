@@ -53,8 +53,8 @@ class Tensor:
         visited = set()
         for node in reversed(self.topological_sort()):
             grads = node._graph.backward(node.grad.data)
-            grads = [Tensor(g, device=self.device, requires_grad=False) if g is not None else None
-                for g in ([grads] if len(t0._ctx.parents) == 1 else grads)] 
+            grads = [Tensor(g, requires_grad=False) if g is not None else None
+                for g in ([grads] if len(node._graph.parents) == 1 else grads)] 
             for ins, grad in zip(node._graph.parents, grads):
                 if ins is not None and grad.requires_grad:
                     ins.grad = grad if ins.grad is None else ins.grad+grad
@@ -84,5 +84,20 @@ class Tensor:
     @classmethod
     def zeros(cls, *shape, **kwargs):
         return cls(np.zeros(shape, dtype=np.float32), **kwargs)
+    
+    def Add(self, x):
+        return Tensor._Add(self, x)
+    def Mul(self, x):
+        return Tensor._Mul(self, x)
+    def Div(self, x):
+        return Tensor._Div(Self, x)
+    def Pow(self):
+        return Tensor._Pow(self, x)
+    def Matmul(self, x):
+        return Tensor._Matmul(self, x)
 
 
+def register_op(name, op):
+    setattr(Tensor, "__{name}__", op):
+for op in ["Add", "Mul", "Div", "Pow", "Matmul"]:
+    register_op(op, getattr(Tensor, op))
