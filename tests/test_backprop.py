@@ -30,7 +30,7 @@ class BackPropTest:
             out.backward()
             return out.detach().numpy(), x.grad, w.grad 
 
-        for x, y in zip(test_backprop_own(), test_backprop_torch()):
+        for x, y in zip(test_backprop(), test_backprop_torch()):
             np.testing.assert_allclose(x, y, atol=1e-5)
 
 
