@@ -1,6 +1,6 @@
 import numpy as np
-import core.ops
 from typing import Optional
+import inspect, importlib, pyclbr
 
 class Tensor:
     def __init__(self, data, device=None, requires_grad=True):
@@ -13,7 +13,7 @@ class Tensor:
         self.device = device
 
         # Used for storing computational graph
-        self._graph : Optional[ops.Function] = None
+        self._graph = None
 
 
     def __repr__(self):
@@ -96,8 +96,15 @@ class Tensor:
     def Matmul(self, x):
         return Tensor._Matmul(self, x)
 
+def register(name, function):
+    def attach(*x):
+        return function.execute(*x)
+    setattr(Tensor, name if (getattr(Tensor, name, None) is not None) else name, attach) 
+for name, cls in inspect.getmembers(importlib.import_module("core.ops"), inspect.isclass):
+    if name != "Function":
+        register(name, cls)
 
 def register_op(name, op):
-    setattr(Tensor, "__{name}__", op):
+    setattr(Tensor, "__{name}__", op)
 for op in ["Add", "Mul", "Div", "Pow", "Matmul"]:
     register_op(op, getattr(Tensor, op))

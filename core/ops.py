@@ -1,4 +1,5 @@
 import numpy as np
+from core.tensor import Tensor
 
 class Function:
     def __init__(self, tensors, device=None):
@@ -14,6 +15,14 @@ class Function:
 
     def backward(self, *args, **kwargs):
         raise NotImplementedError
+    
+    @classmethod
+    def execute(cls, *x):
+        func = cls(*x)
+        ret = Tensor(func.forward(x[0], x[1]), requires_grad=func.requires_grad)
+        if func.requires_grad: 
+            ret._graph = func
+        return ret
 
 
 class ReLU(Function):
