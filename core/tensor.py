@@ -85,26 +85,26 @@ class Tensor:
     def zeros(cls, *shape, **kwargs):
         return cls(np.zeros(shape, dtype=np.float32), **kwargs)
     
-    def Add(self, x):
-        return Tensor._Add(self, x)
-    def Mul(self, x):
-        return Tensor._Mul(self, x)
-    def Div(self, x):
-        return Tensor._Div(Self, x)
-    def Pow(self):
-        return Tensor._Pow(self, x)
-    def Matmul(self, x):
-        return Tensor._Matmul(self, x)
+    def add(self, x):
+        return Tensor.Add(self, x)
+    def mul(self, x):
+        return Tensor.Mmul(self, x)
+    def div(self, x):
+        return Tensor.Div(Self, x)
+    def pow(self):
+        return Tensor.Pow(self, x)
+    def matmul(self, x):
+        return Tensor.Matmul(self, x)
 
 def register(name, function):
     def attach(*x):
         return function.execute(*x)
-    setattr(Tensor, name if (getattr(Tensor, name, None) is not None) else name, attach) 
+    setattr(Tensor, name, attach) 
 for name, cls in inspect.getmembers(importlib.import_module("core.ops"), inspect.isclass):
     if name != "Function":
         register(name, cls)
 
 def register_op(name, op):
-    setattr(Tensor, "__{name}__", op)
-for op in ["Add", "Mul", "Div", "Pow", "Matmul"]:
-    register_op(op, getattr(Tensor, op))
+    setattr(Tensor, f"__{name}__", op)
+for name in ["add", "mul", "div", "pow", "matmul"]:
+    register_op(name, getattr(Tensor, name))
