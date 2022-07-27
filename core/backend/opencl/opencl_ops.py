@@ -1,2 +1,2 @@
-import opencl
+import pyopencl as cl
 
