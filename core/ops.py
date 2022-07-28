@@ -27,13 +27,18 @@ class Function:
             ret._graph = func
         return ret
 
+BinaryOp = Enum(
+
 
 class ReLU(Function):
     def forward(self, x):
-        save_for_backward(x)
+        self.save_for_backward(x)
+        '''
         self.out = np.maximum(0, x)
         return self.out
-    
+        '''
+        return OpType.unary_op(ReLU, x)
+
     def backward(self, grad):
         return grad * np.clip(self.out, 0, 1)
 
@@ -49,22 +54,24 @@ class Add(Function):
 
 class Mul(Function):
     def forward(self, x, y):
-        save_for_backward(x, y)
-        return x * y
+        self.save_for_backward(x, y)
+        return OpType.binary_op(Mul, x, y)
 
     def backward(self, x, y, grad_out):
         return x*grad_out, y*grad_out
 
 class Div(Function):
     def forward(self, x, y):
-        return x * y**-1
-    
+        #return x * y**-1
+        return OpType.binary_op(Div, x, y)
+
     def backward(self, x, y, dout):
         return dout/y, dout*x/y**2
 
 class Pow(Function):
     def forwardi(self, x, y):
-        return x ** y
+        #return x ** y
+        return OpType.binary_op(Pow, x, y)
 
     def backward(self, x, y, dout):
         return dout*y*x**(y-1), dout*np.log(a)*x**Y
@@ -72,7 +79,8 @@ class Pow(Function):
 class Matmul(Function):
     def forward(self, x, y):
         save_for_backward(x, y)
-        return x @ y
+        #return x @ y
+        return OpType.tensor_op(Matmul, x, y)
 
     def backward(self, x, y, dout):
         return x.T @ dout, y.T @ dout

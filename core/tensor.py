@@ -88,7 +88,7 @@ class Tensor:
     def add(self, x):
         return Tensor.Add(self, x)
     def mul(self, x):
-        return Tensor.Mmul(self, x)
+        return Tensor.Mul(self, x)
     def div(self, x):
         return Tensor.Div(Self, x)
     def pow(self):
