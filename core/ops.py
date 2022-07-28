@@ -27,7 +27,10 @@ class Function:
             ret._graph = func
         return ret
 
-BinaryOp = Enum(
+# These ops will most likely change, but at least get them to work
+BinaryOp = Enum("BinaryOp"["Add", "Mul", "Div", "Pow"])
+UnaryOp = Enum("UnaryOp"["ReLU"])
+TensorOp = Enum("TensorOp"["Matmul"])
 
 
 class ReLU(Function):
