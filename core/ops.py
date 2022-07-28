@@ -2,11 +2,14 @@ import numpy as np
 from core.tensor import Tensor
 
 class Function:
-    def __init__(self, tensors, device=None):
+    def __init__(self, *tensors, device=None):
         self.parents = tensors
         self.device = device
         self.saved_inputs = [] 
-    
+        self.input_grad = [tensor.requires_grad for tensor in self.parents]
+        self.requires_grad = any(self.input_grad)
+
+
     def save_for_backward(self, *x):
         self.saved_inputs.extend(x)
 
@@ -36,7 +39,10 @@ class ReLU(Function):
 
 class Add(Function):
     def forward(self, x, y):
-        return x + y
+        a = np.asarray(x.data)
+        b = np.asarray(y.data)
+        out = np.add(a, b)
+        return out
 
     def backward(self, grad_out):
         return grad_out, grad_out  

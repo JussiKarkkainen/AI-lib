@@ -58,7 +58,7 @@ class Tensor:
             for ins, grad in zip(node._graph.parents, grads):
                 if ins is not None and grad.requires_grad:
                     ins.grad = grad if ins.grad is None else ins.grad+grad
-                    
+
 
     # Functions for creating tensors 
     @classmethod 
