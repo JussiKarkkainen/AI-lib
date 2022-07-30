@@ -1,4 +1,3 @@
-from enum import Enum
 from backend.CpuOps import CpuOps
 from backend.GpuOps import GpuOps
 

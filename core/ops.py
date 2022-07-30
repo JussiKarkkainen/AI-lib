@@ -1,5 +1,6 @@
 import numpy as np
 from core.tensor import Tensor
+from enum import Enum
 
 class Function:
     def __init__(self, *tensors, device=None):
@@ -28,9 +29,9 @@ class Function:
         return ret
 
 # These ops will most likely change, but at least get them to work
-BinaryOp = Enum("BinaryOp"["Add", "Mul", "Div", "Pow"])
-UnaryOp = Enum("UnaryOp"["ReLU"])
-TensorOp = Enum("TensorOp"["Matmul"])
+BinaryOp = Enum("BinaryOp", ["Add", "Mul", "Div", "Pow"])
+UnaryOp = Enum("UnaryOp", ["ReLU"])
+TensorOp = Enum("TensorOp", ["Matmul"])
 
 
 class ReLU(Function):
