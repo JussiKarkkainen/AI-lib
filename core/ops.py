@@ -1,6 +1,8 @@
 import numpy as np
 from core.tensor import Tensor
 from enum import Enum
+from core.buffer import Buffer
+
 
 class Function:
     def __init__(self, *tensors, device=None):
@@ -28,12 +30,7 @@ class Function:
             ret._graph = func
         return ret
 
-# These ops will most likely change, but at least get them to work
-BinaryOp = Enum("BinaryOp", ["Add", "Mul", "Div", "Pow"])
-UnaryOp = Enum("UnaryOp", ["ReLU"])
-TensorOp = Enum("TensorOp", ["Matmul"])
-
-
+# Inputs to ops should be of type CpuBuffer
 class ReLU(Function):
     def forward(self, x):
         self.save_for_backward(x)
@@ -41,17 +38,14 @@ class ReLU(Function):
         self.out = np.maximum(0, x)
         return self.out
         '''
-        return OpType.unary_op(ReLU, x)
+        return x.unary_op(ReLU)
 
     def backward(self, grad):
         return grad * np.clip(self.out, 0, 1)
 
 class Add(Function):
     def forward(self, x, y):
-        a = np.asarray(x.data)
-        b = np.asarray(y.data)
-        out = np.add(a, b)
-        return out
+        return x.binary_op(Add, y)
 
     def backward(self, grad_out):
         return grad_out, grad_out  
@@ -59,7 +53,7 @@ class Add(Function):
 class Mul(Function):
     def forward(self, x, y):
         self.save_for_backward(x, y)
-        return OpType.binary_op(Mul, x, y)
+        return x.binary_op(Mul, y)
 
     def backward(self, x, y, grad_out):
         return x*grad_out, y*grad_out
@@ -67,7 +61,7 @@ class Mul(Function):
 class Div(Function):
     def forward(self, x, y):
         #return x * y**-1
-        return OpType.binary_op(Div, x, y)
+        return x.binary_op(Div, y)
 
     def backward(self, x, y, dout):
         return dout/y, dout*x/y**2
@@ -75,7 +69,7 @@ class Div(Function):
 class Pow(Function):
     def forwardi(self, x, y):
         #return x ** y
-        return OpType.binary_op(Pow, x, y)
+        return x.binary_op(Pow, y)
 
     def backward(self, x, y, dout):
         return dout*y*x**(y-1), dout*np.log(a)*x**Y
@@ -84,7 +78,7 @@ class Matmul(Function):
     def forward(self, x, y):
         save_for_backward(x, y)
         #return x @ y
-        return OpType.tensor_op(Matmul, x, y)
+        return x.tensor_op(Matmul, y)
 
     def backward(self, x, y, dout):
         return x.T @ dout, y.T @ dout
