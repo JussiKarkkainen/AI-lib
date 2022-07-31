@@ -1,8 +1,6 @@
 import numpy as np
-from core.ops import BinaryOp, UnaryOp, TensorOp
 
-
-class CpuOps:
+class CpuBuffer(np.ndarray):
 
     def mul(x):
         return np.mul(x, y)
@@ -17,6 +15,14 @@ class CpuOps:
     def matmul(x, y):
         return np.matmul(x, y)
 
+    def __repr__(self):
+        return f"<CpuBuffer>"
+
+    @staticmethod
+    def fromCpu(x):
+        return x.view(CpuBuffer) 
+    def toCpu(x):
+        return x
 
     def unary_op(x, op):
         if op == UnaryOp.ReLU:
