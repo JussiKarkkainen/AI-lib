@@ -1,6 +1,4 @@
 import os
-from core.backend.cpu_ops import CpuBuffer
-from core.backend.gpu_ops import GpuBuffer
 from enum import Enum
 import inspect, importlib
 
@@ -23,43 +21,41 @@ class Device:
         return buffers
  
     buffers : dict = buf_set(devices)
-    default : str = [dev for dev in devices if os.getenv(str(dev)) is not None] 
+    default : str = "gpu" if os.getenv("GPU") is not None else "cpu"
 
 
 class Buffer:
-    def __init__(self, op, op_type, device=None):
+    def __init__(self, op, op_type, data, device):
         self.device = device
         self.op = op
         self.op_type = op_type
-    
+        self.data = data 
 
     def __repr__(self):
-        return f"<Buffer op: {self.op} device: {self.device}>"
+        return f"<Buffer data: {self.data} op: {self.op}  device: {self.device}>"
 
     @staticmethod
-    def fromCpu(self, device):
-        return Buffer(op=LoadOp.fromCpu, op_type=LoadOp, device=device)
+    def fromCpu(x, device):
+        return Buffer(op=LoadOp.fromCpu, op_type=LoadOp, data=x, device=device)
 
-    def binary_op(self, x, y):
-        if self.device == "cpu":
-            return CpuBuffer.binary_op(self.inputs, self.op)
-        elif self.device == "cuda":
-            return GpuOps.binary_op(self.inputs, self.op, self.device)
-        elif self.device == "opencl":
-            return GPUOps.binary_op(self.inputs, self.op, self.device)
+
+    def binary_op(x, op, y):
+        assert(x.device == y.device)
+        if x.device == "cpu":
+            return CpuBuffer.binary_op(x, y, op)
+        elif x.device == "cuda" or "opencl":
+            return GpuOps.binary_op(x, y, op, self.device)
         
     def unary_op(self, x, y):
-        if self.device == "cpu":
-            return CpuBuffer.unary_op(self.inputs, self.op)
-        elif self.device == "cuda":
-            return GpuOps.unary_op(self.inputs, self.op, self.device)
-        elif self.device == "opencl":
-            return GPUOps.unary_op(self.inputs, self.op, self.device)
+        assert(x.device == y.device)
+        if x.device == "cpu":
+            return CpuBuffer.unary_op(x, y, op)
+        elif x.device == "cuda" or "opencl":
+            return GpuOps.unary_op(x, y, op, self.device)
 
     def tensor_op(self, x, y):
-        if self.device == "cpu":
-            return CpuBuffer.tensor_op(self.inputs, self.op)
-        elif self.device == "cuda":
-            return GpuOps.tensor_op(self.inputs, self.op, self.device)
-        elif self.device == "opencl":
-            return GPUOps.tensor_op(self.inputs, self.op, self.device)
+        assert(x.device == y.device)
+        if x.device == "cpu":
+            return CpuBuffer.tensor_op(x, y, op)
+        elif x.device == "cuda" or "opencl":
+            return GpuOps.tensor_op(x, y, op, self.device)

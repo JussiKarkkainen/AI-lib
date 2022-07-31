@@ -1,23 +1,24 @@
 import numpy as np
 from typing import Optional
 import inspect, importlib, pyclbr
-from core.backend.cpu_ops import CpuBuffer
+from core.buffer import Buffer, Device
 
 #check execute in ops.py to transform tensor into Buffer
 
 class Tensor:
-    def __init__(self, data, device=None, requires_grad=True):
+    def __init__(self, data, device=Device.default, requires_grad=True):
         if isinstance(data, list):
             self.data = np.array(data, dtype=np.float32)
-        elif isinstance(data, CpuBuffer):
-            self.data = Buffer.fromCpu(data.astype(np.float32), device)
         else:
+            raise Exception(f"Unable to make tensor from {type(data)}")
+        if isinstance(self.data, np.ndarray):
+            self.bufferdata = Buffer.fromCpu(self.data.astype(np.float32), device)
             self.data = data
+
         self.grad = None
         self.requires_grad = requires_grad
         self.device = device
 
-        # Used for storing computational graph
         self._graph = None
 
 

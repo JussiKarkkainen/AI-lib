@@ -25,7 +25,7 @@ class Function:
     @classmethod
     def execute(cls, *x):
         func = cls(*x)
-        ret = Tensor(func.forward(x[0], x[1]), requires_grad=func.requires_grad)
+        ret = Tensor(func.forward(x[0].bufferdata, x[1].bufferdata), requires_grad=func.requires_grad)
         if func.requires_grad: 
             ret._graph = func
         return ret
