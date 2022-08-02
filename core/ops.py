@@ -67,7 +67,7 @@ class Div(Function):
         return dout/y, dout*x/y**2
 
 class Pow(Function):
-    def forwardi(self, x, y):
+    def forward(self, x, y):
         #return x ** y
         return x.binary_op(BinaryOp.Pow, y)
 

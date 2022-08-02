@@ -3,8 +3,8 @@ from core.buffer import UnaryOp, BinaryOp, TensorOp
 
 class CpuBuffer(np.ndarray):
 
-    def mul(x):
-        return np.mul(x, y)
+    def mul(x, y):
+        return np.multiply(x, y)
     def add(x, y):
         return np.add(x, y)
     def relu(x):
@@ -12,7 +12,7 @@ class CpuBuffer(np.ndarray):
     def power(x, y):
         return np.power(x, y)
     def div(x, y):
-        return np.div(x, y)
+        return np.divide(x, y)
     def matmul(x, y):
         return np.matmul(x, y)
 
@@ -32,7 +32,7 @@ class CpuBuffer(np.ndarray):
         elif op == BinaryOp.Mul:
             return CpuBuffer.mul(x, y)
         elif op == BinaryOp.Div:
-            return div(x, y)
+            return CpuBuffer.div(x, y)
         elif op == BinaryOp.Pow:
             return CpuBuffer.power(x, y)
 

@@ -101,8 +101,8 @@ class Tensor:
     def mul(self, x):
         return Tensor.Mul(self, x)
     def div(self, x):
-        return Tensor.Div(Self, x)
-    def pow(self):
+        return Tensor.Div(self, x)
+    def pow(self, x):
         return Tensor.Pow(self, x)
     def matmul(self, x):
         return Tensor.Matmul(self, x)
