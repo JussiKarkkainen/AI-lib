@@ -2,6 +2,7 @@ import numpy as np
 from typing import Optional
 import inspect, importlib, pyclbr
 from core.buffer import Buffer, Device
+from core.backend.cpu_ops import CpuBuffer
 
 #check execute in ops.py to transform tensor into Buffer
 
@@ -9,6 +10,8 @@ class Tensor:
     def __init__(self, data, device=Device.default, requires_grad=True):
         if isinstance(data, list):
             self.data = np.array(data, dtype=np.float32)
+        elif isinstance(data, CpuBuffer):
+            self.data = np.array(data, dtype = np.float32)
         else:
             raise Exception(f"Unable to make tensor from {type(data)}")
         if isinstance(self.data, np.ndarray):

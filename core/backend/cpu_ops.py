@@ -16,9 +16,6 @@ class CpuBuffer(np.ndarray):
     def matmul(x, y):
         return np.matmul(x, y)
 
-    def __repr__(self):
-        return f"<CpuBuffer>"
-
     @staticmethod
     def fromCpu(x):
         return x.view(CpuBuffer) 
@@ -27,18 +24,18 @@ class CpuBuffer(np.ndarray):
 
     def unary_op(x, op):
         if op == UnaryOp.ReLU:
-            return x.relu()
+            return CpuBuffer.relu(x)
 
-    def binary_op(x, y, op):
+    def binary_op(x, op, y):
         if op == BinaryOp.Add:
-            return add(x, y)
+            return CpuBuffer.add(x, y)
         elif op == BinaryOp.Mul:
-            return mul(x, y)
+            return CpuBuffer.mul(x, y)
         elif op == BinaryOp.Div:
             return div(x, y)
         elif op == BinaryOp.Pow:
-            return power(x, y)
+            return CpuBuffer.power(x, y)
 
-    def tensor_op(x, y, op):
+    def tensor_op(x, op, y):
         if op == TensorOp.Matmul:
-            return matmul(x, y)
+            return CpuBuffer.matmul(x, y)
