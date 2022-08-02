@@ -11,7 +11,9 @@ class Tensor:
         if isinstance(data, list):
             self.data = np.array(data, dtype=np.float32)
         elif isinstance(data, CpuBuffer):
-            self.data = np.array(data, dtype = np.float32)
+            self.data = np.array(data, dtype=np.float32)
+        elif isinstance(data, np.ndarray):
+            self.data = np.array(data, dtype=np.float32)
         else:
             raise Exception(f"Unable to make tensor from {type(data)}")
         if isinstance(self.data, np.ndarray):

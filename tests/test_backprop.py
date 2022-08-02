@@ -1,6 +1,7 @@
 from core.tensor import Tensor
 import numpy as np
 import torch
+import pytest
 
 class BackPropTest:
     def __init__(self):
@@ -82,3 +83,13 @@ class BackPropTest:
 
         for x, y in zip(test_backprop_own_diamond(), test_backprop_torch_diamond()):
             np.testing.assert_allclose(x, y, atol=1e-5)
+
+if __name__ == "__main__":
+    print("Starting test\n")
+    a = BackPropTest()
+    a.test_backprop_simple()
+    a.test_backprop_harder()
+    a.test_backprop_diamond()
+    print("Finished test\n")
+
+
