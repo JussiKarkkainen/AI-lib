@@ -39,15 +39,8 @@ def eval_tensor_op(*buf:Buffer):
 
 def eval_binary_op(parents:Buffer):
     real_parents = {x:None for x in parents.op.src}
-    #print(real_parents)
     for x in real_parents.keys():
-        # x.op.op (maybe x.op_type) is what starts _load_op which in turn returns device buffers
-        # Need to find a way to call _load_op from here
         real_parents[x] = x.eval_op(x.device)
-    # real_parents contain cpubuffers so need to call cpubuffer
-    # functions on them like x.binary_op where x is a cpubuffer
-    # Return result, make it a buffer, so that it can be made into a tensor
-    #print(real_parents)
     def resolve(x:Union[Buffer, Ops]):
         if isinstance(x, Buffer):
             return real_parents[x]
