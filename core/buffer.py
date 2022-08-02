@@ -30,8 +30,17 @@ def eval_load_op(buf:Buffer):
     assert(buf.op.op == LoadOp.fromCpu)
     return Device.buffers[buf.device].fromCpu(buf.op.arg), [], LoadOp
 
-def eval_unary_op(buf:Buffer):
-    pass
+def eval_unary_op(parents:Buffer):
+    real_parents = {x:None for x in parents.op.src}
+    for x in real_parents.keys():
+        real_parents[x] = x.eval_op(x.device)
+    def resolve(x:Union[Buffer, Ops]):
+        if isinstance(x, Buffer):
+            return real_parents[x]
+        if isinstance(x.op, UnaryOp):
+            return resolve(x.src[0]).unary_op(x.op)
+    return resolve(parents.op), list(real_parents.values()), BinaryOp
+    
 
 def eval_tensor_op(*buf:Buffer):
     pass
@@ -69,19 +78,16 @@ class Buffer:
         buf = Buffer(Ops(op, src), BinaryOp, x.device)
         return eval_binary_op(buf)[0]
 
-    def unary_op(self, x, y):
-        assert x.device == y.device
-        if x.device == "cpu":
-            return CpuBuffer.unary_op(x, y, op)
-        elif x.device == "cuda" or "opencl":
-            return GpuOps.unary_op(x, y, op, self.device)
-
+    def unary_op(self, x):
+        src = tuple(self.op if self.op_type == UnaryOp else i for i in tuple([self]))
+        buf = Buffer(Ops(x, src), UnaryOp, self.device)
+        return eval_unary_op(buf)[0]
+    
     def tensor_op(self, x, y):
         assert x.device == y.device
-        if x.device == "cpu":
-            return CpuBuffer.tensor_op(x, y, op)
-        elif x.device == "cuda" or "opencl":
-            return GpuOps.tensor_op(x, y, op, self.device)
+        src = tuple(x.op if x.op_type == BinaryOp else i for i in tuple([x, y]))
+        buf = Buffer(Ops(op, src), BinaryOp, x.device)
+        return eval_binary_op(buf)[0]
 
     def eval_op(self, device=None):
         if device is not None:

@@ -25,7 +25,8 @@ class Function:
     @classmethod
     def execute(cls, *x):
         func = cls(*x)
-        ret = Tensor(func.forward(x[0].bufferdata, x[1].bufferdata), requires_grad=func.requires_grad)
+        ret = Tensor(func.forward(*[s.bufferdata for s in x]), requires_grad=func.requires_grad)
+        #ret = Tensor(func.forward(x[0].bufferdata, x[1].bufferdata), requires_grad=func.requires_grad)
         if func.requires_grad: 
             ret._graph = func
         return ret
@@ -34,10 +35,6 @@ class Function:
 class ReLU(Function):
     def forward(self, x):
         self.save_for_backward(x)
-        '''
-        self.out = np.maximum(0, x)
-        return self.out
-        '''
         return x.unary_op(UnaryOp.ReLU)
 
     def backward(self, grad):
