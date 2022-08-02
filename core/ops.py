@@ -73,7 +73,7 @@ class Pow(Function):
 
 class Matmul(Function):
     def forward(self, x, y):
-        save_for_backward(x, y)
+        self.save_for_backward(x, y)
         #return x @ y
         return x.tensor_op(TensorOp.Matmul, y)
 

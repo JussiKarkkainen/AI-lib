@@ -42,9 +42,16 @@ def eval_unary_op(parents:Buffer):
     return resolve(parents.op), list(real_parents.values()), BinaryOp
     
 
-def eval_tensor_op(*buf:Buffer):
-    pass
-
+def eval_tensor_op(parents:Buffer):
+    real_parents = {x:None for x in parents.op.src}
+    for x in real_parents.keys():
+        real_parents[x] = x.eval_op(x.device)
+    def resolve(x:Union[Buffer, Ops]):
+        if isinstance(x, Buffer):
+            return real_parents[x]
+        if isinstance(x.op, TensorOp):
+            return resolve(x.src[0]).tensor_op(x.op, resolve(x.src[1]))
+    return resolve(parents.op), list(real_parents.values()), TensorOp
 
 def eval_binary_op(parents:Buffer):
     real_parents = {x:None for x in parents.op.src}
@@ -83,11 +90,11 @@ class Buffer:
         buf = Buffer(Ops(x, src), UnaryOp, self.device)
         return eval_unary_op(buf)[0]
     
-    def tensor_op(self, x, y):
+    def tensor_op(x, op, y):
         assert x.device == y.device
-        src = tuple(x.op if x.op_type == BinaryOp else i for i in tuple([x, y]))
-        buf = Buffer(Ops(op, src), BinaryOp, x.device)
-        return eval_binary_op(buf)[0]
+        src = tuple(x.op if x.op_type == TensorOp else i for i in tuple([x, y]))
+        buf = Buffer(Ops(op, src), TensorOp, x.device)
+        return eval_tensor_op(buf)[0]
 
     def eval_op(self, device=None):
         if device is not None:
