@@ -81,6 +81,13 @@ class ForwardTest:
             for i, j in zip(x, y):
                 assert math.isclose(i, j, rel_tol=1e-5)
 
+
+    def test_forward_all(self):
+        self.test_binary_op()
+        self.test_unary_op()
+        self.test_tensor_op()
+
+
 def test_binary_op():
     a = ForwardTest()
     a.test_binary_op()
