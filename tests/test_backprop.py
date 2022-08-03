@@ -5,7 +5,7 @@ import pytest
 
 class BackPropTest:
     def __init__(self):
-        self.x = np.random.randn(1, 3).astype(np.float32)
+        self.x = np.random.randn(1,3).astype(np.float32)
         self.u = np.random.randn(3,3).astype(np.float32)
         self.v = np.random.randn(3,3).astype(np.float32)
         self.w = np.random.randn(3,3).astype(np.float32)
@@ -88,8 +88,8 @@ if __name__ == "__main__":
     print("Starting test\n")
     a = BackPropTest()
     a.test_backprop_simple()
-    a.test_backprop_harder()
-    a.test_backprop_diamond()
+    #a.test_backprop_harder()
+    #a.test_backprop_diamond()
     print("Finished test\n")
 
 

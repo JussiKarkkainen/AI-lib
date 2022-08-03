@@ -4,7 +4,6 @@ import inspect, importlib, pyclbr
 from core.buffer import Buffer, Device
 from core.backend.cpu_ops import CpuBuffer
 
-#check execute in ops.py to transform tensor into Buffer
 
 class Tensor:
     def __init__(self, data, device=Device.default, requires_grad=True):
@@ -26,7 +25,6 @@ class Tensor:
 
         self._graph = None
 
-
     def __repr__(self):
         return f"<Tensor: data={self.data} Grad={self.grad}>"
         
@@ -40,7 +38,6 @@ class Tensor:
 
     def device(self):
         return self.device
-
     
     def topological_sort(self):
         order = []
@@ -50,17 +47,15 @@ class Tensor:
                 visited_nodes.add(node)
                 if node._graph: 
                     for ctx in node._graph.parents:
-                        if ctx not in visited:
+                        if ctx not in visited_nodes:
                             _topo(ctx)
                 order.append(node)
-        
-            return order
-
+        print(_topo(self))
+        return _topo(self)
 
     def backward(self):
-        
         self.grad = Tensor.ones(self.shape, requires_grad=False)
-
+       
         visited = set()
         for node in reversed(self.topological_sort()):
             grads = node._graph.backward(node.grad.data)
@@ -69,7 +64,6 @@ class Tensor:
             for ins, grad in zip(node._graph.parents, grads):
                 if ins is not None and grad.requires_grad:
                     ins.grad = grad if ins.grad is None else ins.grad+grad
-
 
     # Functions for creating tensors 
     @classmethod 
@@ -81,7 +75,7 @@ class Tensor:
         return cls(np.eye(dim).astype(np.float32), **kwargs)
     
     @classmethod
-    def ones(cls, *shape, **kwargs):
+    def ones(cls, shape, **kwargs):
         return cls(np.ones(shape, dtype=np.float32), **kwargs) 
     
     @classmethod
