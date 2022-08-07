@@ -9,7 +9,8 @@ BinaryOp = Enum("BinaryOp", ["Add", "Mul", "Div", "Pow"])
 UnaryOp = Enum("UnaryOp", ["ReLU"])
 TensorOp = Enum("TensorOp", ["Matmul"])
 LoadOp = Enum("LoadOp", ["fromCpu"])
-Ops = Union[BinaryOp, UnaryOp, TensorOp, LoadOp] 
+ReduceOp = Enum("ReduceOp", ["Sum", "Max"])
+Ops = Union[BinaryOp, UnaryOp, ReduceOp, TensorOp, LoadOp] 
 
 class Device:
     devices = ["cpu", "gpu"]
@@ -40,7 +41,9 @@ def eval_unary_op(parents:Buffer):
         if isinstance(x.op, UnaryOp):
             return resolve(x.src[0]).unary_op(x.op)
     return resolve(parents.op), list(real_parents.values()), BinaryOp
-    
+
+def eval_reduce_op(parents:Buffer):
+    pass
 
 def eval_tensor_op(parents:Buffer):
     real_parents = {x:None for x in parents.op.src}
@@ -89,7 +92,10 @@ class Buffer:
         src = tuple(self.op if self.op_type == UnaryOp else i for i in tuple([self]))
         buf = Buffer(Ops(x, src), UnaryOp, self.device)
         return eval_unary_op(buf)[0]
-    
+   
+    def reduce_op(self, x):
+        pass
+
     def tensor_op(x, op, y):
         assert x.device == y.device
         src = tuple(x.op if x.op_type == TensorOp else i for i in tuple([x, y]))

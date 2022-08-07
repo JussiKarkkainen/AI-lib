@@ -31,7 +31,7 @@ class Function:
             ret._graph = func
         return ret
 
-# Inputs to ops should be of type CpuBuffer
+# UnaryOp
 class ReLU(Function):
     def forward(self, x):
         self.save_for_backward(x)
@@ -40,6 +40,7 @@ class ReLU(Function):
     def backward(self, grad):
         return grad * np.clip(self.out, 0, 1)
 
+# BinaryOp
 class Add(Function):
     def forward(self, x, y):
         return x.binary_op(BinaryOp.Add, y)
@@ -71,6 +72,24 @@ class Pow(Function):
     def backward(self, x, y, dout):
         return dout*y*x**(y-1), dout*np.log(a)*x**Y
 
+#ReduceOp
+class Sum(Function):
+    def forward(self, xi, axis=None):
+        return x.reduce_op(ReduceOp.Sum)
+    
+    def backward(self, x, dout):
+        pass
+
+class Max(Function):
+    def forward(self, x, axis=None):
+        out = x.reduce_op(ReduceOp.Max)
+        self.save_for_backward(x, out)
+        return out
+
+    def backward(self, x, dout):
+        pass 
+
+# TensorOp
 class Matmul(Function):
     def forward(self, x, y):
         self.save_for_backward(x, y)
