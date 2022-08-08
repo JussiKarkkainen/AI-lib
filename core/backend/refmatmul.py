@@ -10,8 +10,8 @@ N = 2048
 if __name__ == "__main__":
 
 
-    a = np.random.randn(N, N).astype(np.float32)
-    b = np.random.randn(N, N).astype(np.float32)
+    a = np.random.rand(N, N).astype(np.float32)
+    b = np.random.rand(N, N).astype(np.float32)
 
 
     flop = 2*N*N*N

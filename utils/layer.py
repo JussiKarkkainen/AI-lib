@@ -16,4 +16,4 @@ class Linear(Layer):
         self.parameters.append(self.bias)
 
     def forward(self, x):
-        return np.dot(x, self.weights) + self.bias
+        return x.matmul(self.weights) + self.bias
