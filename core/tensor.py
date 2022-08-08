@@ -106,7 +106,7 @@ def register(name, function):
         return function.execute(*x)
     setattr(Tensor, name, attach) 
 for name, cls in inspect.getmembers(importlib.import_module("core.ops"), inspect.isclass):
-    if name != "Function":
+    if name not in ["Function", "Enum", "Buffer", "Tensor"] and not name.endswith("Op"):
         register(name, cls)
 
 def register_op(name, op):

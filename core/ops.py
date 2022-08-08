@@ -92,7 +92,7 @@ class Max(Function):
         pass
 
 #TransformOp
-def Reshape(Function):
+class Reshape(Function):
     def forward(self, x, shape):
         self.shape = shape
         return x.transform_op(TransformOp.Reshape, shape)
@@ -100,7 +100,7 @@ def Reshape(Function):
     def backward(self, dout):
         return dout.transform_op(TransformOp.Reshape, self.shape)
 
-def Permute(Function):
+class Permute(Function):
     def forward(self, x, dims):
         self.dim = dim
         return x.transform_op(TrnasformOp.Permute, dims)
@@ -108,7 +108,7 @@ def Permute(Function):
     def backward(self, dout):
         return dout.transform_op(TransformOp.Permute, tuple(argsort(self.dims)))
 
-def Expand(Function):
+class Expand(Function):
     def forward(self, x, shape):
         self.shape = shape
         return x.transform_op(TransformOp.Expand, shape)
