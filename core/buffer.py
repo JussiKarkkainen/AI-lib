@@ -28,6 +28,9 @@ class Device:
     buffers : dict = buf_set(devices)
     default : str = "gpu" if os.getenv("GPU") is not None else "cpu"
 
+# These eval functions can propably be unified/simplified in the future,
+# but for now functionality before optimization
+
 def eval_load_op(buf:Buffer):
     assert(buf.op.op == LoadOp.fromCpu)
     return Device.buffers[buf.device].fromCpu(buf.op.arg), [], LoadOp
@@ -41,13 +44,21 @@ def eval_unary_op(parents:Buffer):
             return real_parents[x]
         if isinstance(x.op, UnaryOp):
             return resolve(x.src[0]).unary_op(x.op)
-    return resolve(parents.op), list(real_parents.values()), BinaryOp
+    return resolve(parents.op), list(real_parents.values()), UnaryOp
 
 def eval_reduce_op(parents:Buffer):
     pass
 
-def eval_transform_op(parents:Buffer):
-    pass
+def eval_transform_op(parents:Buffer, shape):
+    real_parents = {x:None for x in parents.op.src}
+    for x in real_parents.keys():
+        real_parents[x] = x.eval_op(x.device)
+    def resolve(x:Union[Buffer, Ops]):
+        if isinstance(x, Buffer):
+            return real_parents[x]
+        if isinstance(x.op, TransformOp):
+            return resolve(x.src[0]).transform_op(x.op, shape)
+    return resolve(parents.op), list(real_parents.values()), TransformOp
 
 def eval_tensor_op(parents:Buffer):
     real_parents = {x:None for x in parents.op.src}
@@ -74,13 +85,14 @@ def eval_binary_op(parents:Buffer):
 _eval = {LoadOp: eval_load_op, BinaryOp: eval_binary_op, UnaryOp: eval_unary_op, TensorOp: eval_tensor_op}
 
 class Buffer:
-    def __init__(self, op:Ops, op_type, device):
+    def __init__(self, op:Ops, op_type, device, shape=None):
         self.device = device
         self.op = op
         self.op_type = op_type
+        self.shape = shape
 
     def __repr__(self):
-        return f"<Buffer op: {self.op.op}  device: {self.device}>"
+        return f"<Buffer, op: {self.op.op} device: {self.device}>"
 
     @staticmethod
     def fromCpu(x, device):
@@ -92,16 +104,19 @@ class Buffer:
         buf = Buffer(Ops(op, src), BinaryOp, x.device)
         return eval_binary_op(buf)[0]
 
-    def unary_op(self, x):
+    def unary_op(self, op):
         src = tuple(self.op if self.op_type == UnaryOp else i for i in tuple([self]))
-        buf = Buffer(Ops(x, src), UnaryOp, self.device)
+        buf = Buffer(Ops(op, src), UnaryOp, self.device)
         return eval_unary_op(buf)[0]
    
-    def reduce_op(self, x):
+    def reduce_op(self, op, dim):
         pass
 
-    def transform_op(self, x):
-        pass
+    def transform_op(self, op, shape):
+        # TODO if shape is same as original shape, no need to do anything
+        src = tuple(self.op if self.op_type == TransformOp else i for i in tuple([self]))
+        buf = Buffer(Ops(op, src), TransformOp, self.device)
+        return eval_transform_op(buf, shape)[0]
 
     def tensor_op(x, op, y):
         assert x.device == y.device

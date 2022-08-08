@@ -100,10 +100,15 @@ class Tensor:
         return Tensor.Pow(self, x)
     def matmul(self, x):
         return Tensor.Matmul(self, x)
+    
+    def reshape(self, shape):
+        return Tensor.Reshape(self, shape=shape)
+    def expand(self, shape):
+        return Tensor.Expand(self, shape=shape)
 
 def register(name, function):
-    def attach(*x):
-        return function.execute(*x)
+    def attach(*x, **kwargs):
+        return function.execute(*x, **kwargs)
     setattr(Tensor, name, attach) 
 for name, cls in inspect.getmembers(importlib.import_module("core.ops"), inspect.isclass):
     if name not in ["Function", "Enum", "Buffer", "Tensor"] and not name.endswith("Op"):

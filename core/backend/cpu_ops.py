@@ -20,7 +20,7 @@ class CpuBuffer(np.ndarray):
     def sum(x, *args, **kwargs):
         return np.sum(x, *args, **kwargs)
     def reshape(x, arg):
-        pass
+        return np.reshape(x, arg)
     def permute(x, arg):
         pass
     def expand(x, arg):
@@ -52,7 +52,7 @@ class CpuBuffer(np.ndarray):
         elif op == ReduceOp.Max:
             return CpuBuffer.max(x, axis, keepdim=True)
 
-    def transform_op(x, op, arg=None):
+    def transform_op(x, op, arg):
         if op == TransformOp.Reshape:
             return x.reshape(arg)
         elif op == TransformOp.Permute:

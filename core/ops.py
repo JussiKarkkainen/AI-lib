@@ -2,17 +2,16 @@ from enum import Enum
 import numpy as np
 from core.tensor import Tensor
 from core.buffer import Buffer
-from core.buffer import BinaryOp, UnaryOp, TensorOp
+from core.buffer import BinaryOp, UnaryOp, ReduceOp, TransformOp, TensorOp
 from utils.misc import argsort
 
 class Function:
     def __init__(self, *tensors, device=None):
-        self.parents = tensors
+        self.parents = tuple([x for x in tensors if type(x) == Tensor])
         self.device = device
         self.saved_inputs = [] 
-        self.input_grad = [tensor.requires_grad for tensor in self.parents]
+        self.input_grad = [x.requires_grad for x in self.parents] 
         self.requires_grad = any(self.input_grad)
-
 
     def save_for_backward(self, *x):
         self.saved_inputs.extend(x)
@@ -24,10 +23,9 @@ class Function:
         raise NotImplementedError
     
     @classmethod
-    def execute(cls, *x):
-        func = cls(*x)
-        ret = Tensor(func.forward(*[s.bufferdata for s in x]), requires_grad=func.requires_grad)
-        #ret = Tensor(func.forward(x[0].bufferdata, x[1].bufferdata), requires_grad=func.requires_grad)
+    def execute(cls, *x, **kwargs):
+        func = cls(*x, x[0].device)
+        ret = Tensor(func.forward(*[s.bufferdata for s in x], **kwargs), requires_grad=func.requires_grad)
         if func.requires_grad: 
             ret._graph = func
         return ret
