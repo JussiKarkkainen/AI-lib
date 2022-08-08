@@ -106,6 +106,9 @@ class Tensor:
     def expand(self, shape):
         return Tensor.Expand(self, shape=shape)
 
+    def transpose(self, dims=None):
+        return Tensor.Permute(self, dims=dims)
+
 def register(name, function):
     def attach(*x, **kwargs):
         return function.execute(*x, **kwargs)

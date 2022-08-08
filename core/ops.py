@@ -100,8 +100,8 @@ class Reshape(Function):
 
 class Permute(Function):
     def forward(self, x, dims):
-        self.dim = dim
-        return x.transform_op(TrnasformOp.Permute, dims)
+        self.dims = dims
+        return x.transform_op(TransformOp.Permute, dims)
     
     def backward(self, dout):
         return dout.transform_op(TransformOp.Permute, tuple(argsort(self.dims)))
