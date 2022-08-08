@@ -75,7 +75,7 @@ class Pow(Function):
 class Sum(Function):
     def forward(self, x, axis=None):
         self.shape = x.shape 
-        return x.reduce_op(ReduceOp.Sum)
+        return x.reduce_op(ReduceOp.Sum, axis)
     
     def backward(self, dout):
         return dout.transform_op(TransformOp.Expand, self.shape)

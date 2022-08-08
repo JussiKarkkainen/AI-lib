@@ -100,12 +100,16 @@ class Tensor:
         return Tensor.Pow(self, x)
     def matmul(self, x):
         return Tensor.Matmul(self, x)
-    
+   
+    def sum(self, axis=None):
+        axis = range(len(self.shape)) if axis == None else axis
+        axis = tuple([x if x >= 0 else x+len(self.shape) for x in axis])
+        return Tensor.Sum(self, axis=axis)
+
     def reshape(self, shape):
         return Tensor.Reshape(self, shape=shape)
     def expand(self, shape):
         return Tensor.Expand(self, shape=shape)
-
     def transpose(self, dims=None):
         return Tensor.Permute(self, dims=dims)
 

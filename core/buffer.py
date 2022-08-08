@@ -46,8 +46,16 @@ def eval_unary_op(parents:Buffer):
             return resolve(x.src[0]).unary_op(x.op)
     return resolve(parents.op), list(real_parents.values()), UnaryOp
 
-def eval_reduce_op(parents:Buffer):
-    pass
+def eval_reduce_op(parents:Buffer, axis):
+    real_parents = {x:None for x in parents.op.src}
+    for x in real_parents.keys():
+        real_parents[x] = x.eval_op(x.device)
+    def resolve(x:Union[Buffer, Ops]):
+        if isinstance(x, Buffer):
+            return real_parents[x]
+        if isinstance(x.op, ReduceOp):
+            return resolve(x.src[0]).reduce_op(x.op, axis)
+    return resolve(parents.op), list(real_parents.values()), ReduceOp
 
 def eval_transform_op(parents:Buffer, shape):
     real_parents = {x:None for x in parents.op.src}
@@ -109,8 +117,10 @@ class Buffer:
         buf = Buffer(Ops(op, src), UnaryOp, self.device)
         return eval_unary_op(buf)[0]
    
-    def reduce_op(self, op, dim):
-        pass
+    def reduce_op(self, op, axis):
+        src = tuple(self.op if self.op_type == ReduceOp else i for i in tuple([self]))
+        buf = Buffer(Ops(op, src), ReduceOp, self.device)
+        return eval_reduce_op(buf, axis)[0] 
 
     def transform_op(self, op, shape):
         # TODO if shape is same as original shape, no need to do anything
