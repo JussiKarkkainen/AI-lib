@@ -3,6 +3,7 @@ import numpy as np
 from core.tensor import Tensor
 from core.buffer import Buffer
 from core.buffer import BinaryOp, UnaryOp, TensorOp
+from utils.misc import argsort
 
 class Function:
     def __init__(self, *tensors, device=None):
@@ -74,11 +75,12 @@ class Pow(Function):
 
 #ReduceOp
 class Sum(Function):
-    def forward(self, xi, axis=None):
+    def forward(self, x, axis=None):
+        self.shape = x.shape 
         return x.reduce_op(ReduceOp.Sum)
     
-    def backward(self, x, dout):
-        pass
+    def backward(self, dout):
+        return dout.transform_op(TransformOp.Expand, self.shape)
 
 class Max(Function):
     def forward(self, x, axis=None):
@@ -87,7 +89,32 @@ class Max(Function):
         return out
 
     def backward(self, x, dout):
-        pass 
+        pass
+
+#TransformOp
+def Reshape(Function):
+    def forward(self, x, shape):
+        self.shape = shape
+        return x.transform_op(TransformOp.Reshape, shape)
+    
+    def backward(self, dout):
+        return dout.transform_op(TransformOp.Reshape, self.shape)
+
+def Permute(Function):
+    def forward(self, x, dims):
+        self.dim = dim
+        return x.transform_op(TrnasformOp.Permute, dims)
+    
+    def backward(self, dout):
+        return dout.transform_op(TransformOp.Permute, tuple(argsort(self.dims)))
+
+def Expand(Function):
+    def forward(self, x, shape):
+        self.shape = shape
+        return x.transform_op(TransformOp.Expand, shape)
+    
+    def backward(self, dout):
+        return dout.reduce_op(ReduceOp.Sum, self.shape)
 
 # TensorOp
 class Matmul(Function):

@@ -10,7 +10,8 @@ UnaryOp = Enum("UnaryOp", ["ReLU"])
 TensorOp = Enum("TensorOp", ["Matmul"])
 LoadOp = Enum("LoadOp", ["fromCpu"])
 ReduceOp = Enum("ReduceOp", ["Sum", "Max"])
-Ops = Union[BinaryOp, UnaryOp, ReduceOp, TensorOp, LoadOp] 
+TransformOp = Enum("TransformOp", ["Reshape", "Permute", "Expand"])
+Ops = Union[BinaryOp, UnaryOp, ReduceOp, TransformOp, TensorOp, LoadOp] 
 
 class Device:
     devices = ["cpu", "gpu"]
@@ -43,6 +44,9 @@ def eval_unary_op(parents:Buffer):
     return resolve(parents.op), list(real_parents.values()), BinaryOp
 
 def eval_reduce_op(parents:Buffer):
+    pass
+
+def eval_transform_op(parents:Buffer):
     pass
 
 def eval_tensor_op(parents:Buffer):
@@ -94,6 +98,9 @@ class Buffer:
         return eval_unary_op(buf)[0]
    
     def reduce_op(self, x):
+        pass
+
+    def transform_op(self, x):
         pass
 
     def tensor_op(x, op, y):
