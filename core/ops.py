@@ -26,7 +26,7 @@ class Function:
     def execute(cls, *x, **kwargs):
         func = cls(*x, x[0].device)
         ret = Tensor(func.forward(*[s.bufferdata for s in x], **kwargs), requires_grad=func.requires_grad)
-        if func.requires_grad: 
+        if func.requires_grad:
             ret._graph = func
         return ret
 
@@ -36,45 +36,58 @@ class ReLU(Function):
         self.save_for_backward(x)
         return x.unary_op(UnaryOp.ReLU)
 
-    def backward(self, grad):
-        return grad * np.clip(self.out, 0, 1)
+    def backward(self, dout):
+        return self.saved_inputs[0].unary_op(UnaryOp.Sign).unary_op(UnaryOp.ReLU).binary_op(BinaryOp.Mul, dout)
 
 # BinaryOp
 class Add(Function):
     def forward(self, x, y):
         return x.binary_op(BinaryOp.Add, y)
 
-    def backward(self, grad_out):
-        return grad_out, grad_out  
+    def backward(self, dout):
+        return dout if self.input_grad[0] else None, \
+               dout if self.input_grad[1] else None
 
 class Mul(Function):
     def forward(self, x, y):
         self.save_for_backward(x, y)
         return x.binary_op(BinaryOp.Mul, y)
 
-    def backward(self, x, y, grad_out):
-        return x*grad_out, y*grad_out
+    def backward(self, dout):
+        x_grad = self.saved_inputs[1].binary_op(BinaryOps.Mul, dout) if self.input_grad[0] else None
+        y_grad = self.saved_inputs[0].binary_op(BinaryOps.Mul, dout) if self.input_grad[1] else None
+        return x_grad, y_grad 
 
 class Div(Function):
     def forward(self, x, y):
-        #return x * y**-1
         return x.binary_op(BinaryOp.Div, y)
 
     def backward(self, x, y, dout):
-        return dout/y, dout*x/y**2
+        b = self.saved_inputs[1]
+        a = self.saved_inputs[0]
+        y_grad = dout.binary_op(BinaryOp.Div, b) 
+        x_grad = dout.binary_op(BinaryOp.Mul, a).binary_op(BinaryOp.Div, b.binary_op(BinaryOp.Pow, 2))
+        return y_grad, x_grad
 
 class Pow(Function):
     def forward(self, x, y):
-        #return x ** y
         return x.binary_op(BinaryOp.Pow, y)
 
-    def backward(self, x, y, dout):
-        return dout*y*x**(y-1), dout*np.log(a)*x**Y
+    def backward(self, dout):
+        x, y, powxy = ctx.saved_inputs
+        grad_x, grad_y = None, None
+        if self.input_grad[0]:
+            tmp = y.binary_op(BinaryOps.Mul, powxy.binary_op(BinaryOps.Div, x))
+            grad_x = dout.binary_op(BinaryOps.Mul, tmp)
+        if self.input_grad[1]:
+            tmp = x.unary_op(UnaryOps.Log).binary_op(BinaryOps.Mul, powxy) 
+            grad_y = dout.binary_op(BinaryOps.Mul, tmp)
+        return grad_x, grad_y 
 
 #ReduceOp
 class Sum(Function):
     def forward(self, x, axis=None):
-        self.shape = x.shape 
+        self.shape = x.op.arg.shape 
         return x.reduce_op(ReduceOp.Sum, axis)
     
     def backward(self, dout):
@@ -118,8 +131,13 @@ class Expand(Function):
 class Matmul(Function):
     def forward(self, x, y):
         self.save_for_backward(x, y)
-        #return x @ y
         return x.tensor_op(TensorOp.Matmul, y)
 
-    def backward(self, x, y, dout):
-        return x.T @ dout, y.T @ dout
+    def backward(self, dout):
+        self.shapex = self.saved_inputs[1].op.arg.shape
+        self.shapey = self.saved_inputs[0].op.arg.shape
+        x_t = self.saved_inputs[1].transform_op(TransformOp.Permute, self.shapex)
+        x_grad = dout.tensor_op(TensorOp.Matmul, x_t)
+        y_t = self.saved_inputs[0].transform_op(TransformOp.Permute, self.shapey)
+        y_grad = y_t.tensor_op(TensorOp.Matmul, dout)
+        return x_grad, y_grad

@@ -4,7 +4,6 @@ import inspect, importlib, pyclbr
 from core.buffer import Buffer, Device
 from core.backend.cpu_ops import CpuBuffer
 
-
 class Tensor:
     def __init__(self, data, device=Device.default, requires_grad=True):
         if isinstance(data, list):
@@ -19,14 +18,14 @@ class Tensor:
             self.bufferdata = Buffer.fromCpu(self.data.astype(np.float32), device)
             self.data = data
 
-        self.grad = None
+        self.grad = None 
         self.requires_grad = requires_grad
         self.device = device
 
-        self._graph = None
+        self._graph = None 
 
     def __repr__(self):
-        return f"<Tensor: data={self.data} Grad={self.grad}>"
+        return f"<Tensor: data={self.data} Grad={self.grad.bufferdata if self.grad else None}>"
         
     @property
     def dtype(self):
@@ -38,31 +37,31 @@ class Tensor:
 
     def device(self):
         return self.device
-    
+
+# These won't be needed in the future, but i'll leave them incase I change my mind
     def topological_sort(self):
         order = []
         visited_nodes = set()
         def _topo(node):
-            if node not in visited_nodes:
-                visited_nodes.add(node)
-                if node._graph: 
-                    for ctx in node._graph.parents:
-                        if ctx not in visited_nodes:
-                            _topo(ctx)
+            visited_nodes.add(node)
+            if node._graph:
+                [_topo(i) for i in node._graph.parents if i not in visited_nodes]
                 order.append(node)
-        print(_topo(self))
+            return order
         return _topo(self)
 
     def backward(self):
         self.grad = Tensor.ones(self.shape, requires_grad=False)
-       
         visited = set()
         for node in reversed(self.topological_sort()):
-            grads = node._graph.backward(node.grad.data)
+            if not any(x.requires_grad for x in node._graph.parents): 
+                continue
+            #assert (node.grad is not None)
+            grads = node._graph.backward(node.grad.bufferdata)
             grads = [Tensor(g, requires_grad=False) if g is not None else None
                 for g in ([grads] if len(node._graph.parents) == 1 else grads)] 
             for ins, grad in zip(node._graph.parents, grads):
-                if ins is not None and grad.requires_grad:
+                if grad is not None and ins.requires_grad:
                     ins.grad = grad if ins.grad is None else ins.grad+grad
 
     # Functions for creating tensors 

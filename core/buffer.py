@@ -124,12 +124,15 @@ class Buffer:
 
     def transform_op(self, op, shape):
         # TODO if shape is same as original shape, no need to do anything
+        if shape == self.op.arg.shape and op == TransformOp.Reshape or TransformOp.Expand:
+            return self.op.arg
+        if op == TranformOp.Permute and shape == self.op.arg.shape:
+            shape = None
         src = tuple(self.op if self.op_type == TransformOp else i for i in tuple([self]))
         buf = Buffer(Ops(op, src), TransformOp, self.device)
         return eval_transform_op(buf, shape)[0]
 
     def tensor_op(x, op, y):
-        assert x.device == y.device
         src = tuple(x.op if x.op_type == TensorOp else i for i in tuple([x, y]))
         buf = Buffer(Ops(op, src), TensorOp, x.device)
         return eval_tensor_op(buf)[0]
