@@ -1,10 +1,20 @@
+# Based on https://github.com/mattjj/autodidact
+import numpy as np
 
 
 
+class Node:
+    def __init__(self, value, fun, args, kwargs, parent_argnums, parents):
+        self.parents = parents
+        self.recipe = (fun, value, args, kwargs, parent_argnums)
 
 
 
+def topological_sort(end_node):
+    pass
 
+def backward(graph, end_node):
+    pass
 
 
 
