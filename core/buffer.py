@@ -3,6 +3,7 @@ import os
 from enum import Enum
 import inspect, importlib, functools, operator
 from typing import Union, Tuple, NamedTuple, Any
+import numpy as np
 
 # These ops will most likely change, but at least get them to work
 BinaryOp = Enum("BinaryOp", ["Add", "Mul", "Div", "Pow"])
@@ -100,7 +101,7 @@ class Buffer:
         self.shape = shape
 
     def __repr__(self):
-        return f"<Buffer, op: {self.op.op} device: {self.device}>"
+        return f"<Buffer, shape: {self.shape}  op: {self.op.op} device: {self.device}>"
 
     @staticmethod
     def fromCpu(x, device):
@@ -123,16 +124,17 @@ class Buffer:
         return eval_reduce_op(buf, axis)[0] 
 
     def transform_op(self, op, shape):
-        # TODO if shape is same as original shape, no need to do anything
-        if shape == self.op.arg.shape and op == TransformOp.Reshape or TransformOp.Expand:
+        if shape == self.op.arg.shape and (op == TransformOp.Reshape or op == TransformOp.Expand):
             return self.op.arg
-        if op == TranformOp.Permute and shape == self.op.arg.shape:
+        if op == TransformOp.Permute and shape == self.op.arg.shape:
             shape = None
         src = tuple(self.op if self.op_type == TransformOp else i for i in tuple([self]))
         buf = Buffer(Ops(op, src), TransformOp, self.device)
         return eval_transform_op(buf, shape)[0]
 
     def tensor_op(x, op, y):
+        if type(y) == np.ndarray:
+            y = Buffer.fromCpu(y, x.device)
         src = tuple(x.op if x.op_type == TensorOp else i for i in tuple([x, y]))
         buf = Buffer(Ops(op, src), TensorOp, x.device)
         return eval_tensor_op(buf)[0]

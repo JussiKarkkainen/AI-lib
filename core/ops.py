@@ -91,6 +91,7 @@ class Sum(Function):
         return x.reduce_op(ReduceOp.Sum, axis)
     
     def backward(self, dout):
+        print(print(dout.transform_op(TransformOp.Expand, self.shape)))
         return dout.transform_op(TransformOp.Expand, self.shape)
 
 class Max(Function):
