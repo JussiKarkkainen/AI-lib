@@ -7,7 +7,7 @@ import numpy as np
 
 # These ops will most likely change, but at least get them to work
 BinaryOp = Enum("BinaryOp", ["Add", "Mul", "Div", "Pow"])
-UnaryOp = Enum("UnaryOp", ["ReLU"])
+UnaryOp = Enum("UnaryOp", ["ReLU", "Sign"])
 TensorOp = Enum("TensorOp", ["Matmul"])
 LoadOp = Enum("LoadOp", ["fromCpu"])
 ReduceOp = Enum("ReduceOp", ["Sum", "Max"])

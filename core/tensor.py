@@ -56,7 +56,6 @@ class Tensor:
         for node in reversed(self.topological_sort()):
             if not any(x.requires_grad for x in node._graph.parents): 
                 continue
-            #assert (node.grad is not None)
             grads = node._graph.backward(node.grad.bufferdata)
             grads = [Tensor(g, requires_grad=False) if g is not None else None
                 for g in ([grads] if len(node._graph.parents) == 1 else grads)] 

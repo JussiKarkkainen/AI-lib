@@ -26,6 +26,8 @@ class CpuBuffer(np.ndarray):
         return np.transpose(x, arg)
     def expand(x, arg):
         return np.broadcast_to(x, arg).view(CpuBuffer)
+    def sign(x):
+        return np.sign(x)
 
     @staticmethod
     def fromCpu(x):
@@ -36,6 +38,8 @@ class CpuBuffer(np.ndarray):
     def unary_op(x, op):
         if op == UnaryOp.ReLU:
             return CpuBuffer.relu(x)
+        elif op == UnaryOp.Sign:
+            return CpuBuffer.sign(x)
 
     def binary_op(x, op, y):
         if op == BinaryOp.Add:
