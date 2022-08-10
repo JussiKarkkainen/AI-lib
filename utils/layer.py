@@ -1,3 +1,4 @@
+from core.tensor import Tensor
 
 class Layer:
     def __init__(self):
@@ -9,8 +10,8 @@ class Layer:
 class Linear(Layer):
     def __init__(self, num_inputs, num_outputs):
         super().__init__()
-        self.weights = Tensor.randn((num_inputs, num_outputs), requires_grad=True)
-        self.bias = Tensor.zeros((1, num_outputs), requires_grad=True)
+        self.weights = Tensor.randn((num_inputs, num_outputs))
+        self.bias = Tensor.zeros((1, num_outputs)) 
 
         self.parameters.append(self.weights)
         self.parameters.append(self.bias)
