@@ -29,7 +29,7 @@ class Device:
     buffers : dict = buf_set(devices)
     default : str = "gpu" if os.getenv("GPU") is not None else "cpu"
 
-# These eval functions can propably be unified/simplified in the future,
+# These eval functions can be unified/simplified in the future,
 # but for now functionality before optimization
 
 def eval_load_op(buf:Buffer):
@@ -123,13 +123,15 @@ class Buffer:
         buf = Buffer(Ops(op, src), ReduceOp, self.device)
         return eval_reduce_op(buf, axis)[0] 
 
-    def transform_op(self, op, shape):
+    def transform_op(self, op, shape, return_buf=False):
         if shape == self.op.arg.shape and (op == TransformOp.Reshape or op == TransformOp.Expand):
             return self.op.arg
         if op == TransformOp.Permute and shape == self.op.arg.shape:
             shape = None
         src = tuple(self.op if self.op_type == TransformOp else i for i in tuple([self]))
         buf = Buffer(Ops(op, src), TransformOp, self.device)
+        if return_buf:
+            return Buffer.fromCpu(eval_transform_op(buf, shape)[0], self.device)
         return eval_transform_op(buf, shape)[0]
 
     def tensor_op(x, op, y):

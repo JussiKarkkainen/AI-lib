@@ -91,7 +91,6 @@ class Sum(Function):
         return x.reduce_op(ReduceOp.Sum, axis)
     
     def backward(self, dout):
-        print(print(dout.transform_op(TransformOp.Expand, self.shape)))
         return dout.transform_op(TransformOp.Expand, self.shape)
 
 class Max(Function):
@@ -137,8 +136,8 @@ class Matmul(Function):
     def backward(self, dout):
         self.shapex = self.saved_inputs[1].op.arg.shape
         self.shapey = self.saved_inputs[0].op.arg.shape
-        x_t = self.saved_inputs[1].transform_op(TransformOp.Permute, self.shapex)
+        x_t = self.saved_inputs[1].transform_op(TransformOp.Permute, self.shapex, True)
         x_grad = dout.tensor_op(TensorOp.Matmul, x_t)
-        y_t = self.saved_inputs[0].transform_op(TransformOp.Permute, self.shapey)
+        y_t = self.saved_inputs[0].transform_op(TransformOp.Permute, self.shapey, True)
         y_grad = y_t.tensor_op(TensorOp.Matmul, dout)
         return x_grad, y_grad

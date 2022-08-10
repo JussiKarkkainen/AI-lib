@@ -58,8 +58,6 @@ class Tensor:
                 continue
             #assert (node.grad is not None)
             grads = node._graph.backward(node.grad.bufferdata)
-            print(node._graph)
-            print(grads)
             grads = [Tensor(g, requires_grad=False) if g is not None else None
                 for g in ([grads] if len(node._graph.parents) == 1 else grads)] 
             for ins, grad in zip(node._graph.parents, grads):
