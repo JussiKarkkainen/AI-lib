@@ -16,9 +16,9 @@ class SGD(Optim):
         self.momentum = momentum
         self.weight_decay = weight_decay
         
-        self.velocity[]
-        for param = params:
-            self.velocity.append(np.zeros_like(param.grad)
+        self.velocity = []
+        for param in params:
+            self.velocity.append(np.zeros_like(param.grad))
 
     def step(self):
         for param, v in zip(self.params, self.velocity):
@@ -26,7 +26,7 @@ class SGD(Optim):
             param -= self.lr * v
 
 class RMSprop(Optim):
-    def __init__(self, params, lr=0.01, alpha=0.99, eps=1e-8) 
+    def __init__(self, params, lr=0.01, alpha=0.99, eps=1e-8): 
         super().__init__()
         self.lr = lr
         self.alpha = alpha
@@ -54,6 +54,6 @@ class Adam(Optim):
         for i, param in enumerate(self.params):
             self.m[i] = self.betas[0] * self.m[i] + (1 - self.betas[0]) * param.grad
             self.v[i] = self.betas[1] * self.v[i] + (1 - self.betas[1]) * (param.grad * param_grad)
-            param -= (self.lr * (self.m[i].div(1 - self.betas[0].pow(self.t)))).div(((self.v[i].div(1 - self.betas[1].pow(self.t))) + self.eps)) + self.eps))))
+            param -= (self.lr * (self.m[i].div(1 - self.betas[0].pow(self.t)))).div(((((((self.v[i].div(1 - self.betas[1].pow(self.t))) + self.eps)) + self.eps))))
 
 
