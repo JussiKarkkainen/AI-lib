@@ -1,6 +1,7 @@
 import numpy as np
 from typing import Optional
 import inspect, importlib, pyclbr
+import functools
 from core.buffer import Buffer, Device
 from core.backend.cpu_ops import CpuBuffer
 
@@ -87,6 +88,12 @@ class Tensor:
     @classmethod
     def zeros(cls, *shape, **kwargs):
         return cls(np.zeros(shape, dtype=np.float32), **kwargs)
+    
+    def flatten(self, start_dim=0, end_dim=-1):
+        new_shape = list(self.shape[start_dim:end_dim])
+        new_shape.append(self.shape[end_dim])
+        new_shape = (functools.reduce(lambda x, y : x*y, new_shape),)
+        return Tensor.reshape(self, new_shape)
 
     def relu(self):
         return Tensor.ReLU(self)
