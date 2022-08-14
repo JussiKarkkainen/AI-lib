@@ -6,7 +6,7 @@ def MSEloss(y_hat, y, reduction="mean")
     if y.size() != y_hat.size():
         warnings.warn("input tensor and target tensor are of different sizes")
 
-    MSEloss = (y_hat - y)**2
+    MSEloss = (y_hat - y)*(y_hat - y)
     if reduction == "none":
         return MSEloss
     elif reduction == "mean":

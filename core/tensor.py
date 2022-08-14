@@ -87,7 +87,10 @@ class Tensor:
     @classmethod
     def zeros(cls, *shape, **kwargs):
         return cls(np.zeros(shape, dtype=np.float32), **kwargs)
-    
+
+    def relu(self):
+        return Tensor.ReLU(self)
+
     def add(self, x):
         return Tensor.Add(self, x)
     def mul(self, x):
