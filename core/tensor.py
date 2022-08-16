@@ -39,7 +39,7 @@ class Tensor:
     def device(self):
         return self.device
 
-# These won't be needed in the future, but i'll leave them incase I change my mind
+    # These won't be needed in the future, but i'll leave them incase I change my mind
     def topological_sort(self):
         order = []
         visited_nodes = set()
@@ -88,6 +88,38 @@ class Tensor:
     @classmethod
     def zeros(cls, *shape, **kwargs):
         return cls(np.zeros(shape, dtype=np.float32), **kwargs)
+  
+    def stack(self, *tensors, dim=0):
+        assert [self.shape] == [x.shape for x in tensors]
+        args = [self] + list(tensors)
+        vals = []
+        for x in args:
+            tmp = []
+            for i in x.data:
+                for j in i:
+                    tmp.append(j)
+                    vals.append(j)
+        print(self)
+        print("\n")
+        print(tensors)
+        print("\n")
+        print(vals)
+        print("\n")
+        print(tmp)
+        return Tensor([self, tensors])
+
+    def corr2d(self, x):
+        def _corr2d(self, x):
+            h, w = x.shape
+            Y = Tensor.zeros((self.shape[0] - h + 1, self.shape[1] - w + 1))
+            for i in range(Y.shape[0]):
+                for j in range(Y.shape[1]):
+                    Y[i, j] = (self[i:i + h, j:j + w] * x).sum()
+            return Y
+        return Tensor.sum(_corr2d(x, k) for x, k in zip(self, x))
+
+    def Conv2d(self, x):
+        Tensor.stack([corr2d(self, k) for k in x], 0)
     
     def flatten(self, start_dim=0, end_dim=-1):
         new_shape = list(self.shape[start_dim:end_dim])
