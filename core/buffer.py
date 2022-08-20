@@ -55,8 +55,6 @@ def eval_op_all(parents:Buffer, shape=None):
             return resolve(x.src[0]).transform_op(x.op, shape)
     return resolve(parents.op), list(real_parents.values()), parents.op_type
 
-_eval = {LoadOp: eval_load_op, BinaryOp: eval_binary_op, UnaryOp: eval_unary_op, TensorOp: eval_tensor_op}
-
 class Buffer:
     def __init__(self, op:Ops, op_type, device, shape=None):
         self.device = device
@@ -108,7 +106,7 @@ class Buffer:
     def eval_op(self, device=None):
         if device is not None:
             assert(device == self.device)
-        evaluated, real_parents, real_type = _eval[self.op_type](self)
+        evaluated, real_parents, real_type = eval_load_op(self) if self.op_type == LoadOp else eval_op_all(self)
         return evaluated
 
 class Ops(NamedTuple):
