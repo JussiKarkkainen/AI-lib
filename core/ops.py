@@ -54,8 +54,8 @@ class Mul(Function):
         return x.binary_op(BinaryOp.Mul, y)
 
     def backward(self, dout):
-        x_grad = self.saved_inputs[1].binary_op(BinaryOps.Mul, dout) if self.input_grad[0] else None
-        y_grad = self.saved_inputs[0].binary_op(BinaryOps.Mul, dout) if self.input_grad[1] else None
+        x_grad = self.saved_inputs[1].binary_op(BinaryOp.Mul, dout) if self.input_grad[0] else None
+        y_grad = self.saved_inputs[0].binary_op(BinaryOp.Mul, dout) if self.input_grad[1] else None
         return x_grad, y_grad 
 
 class Div(Function):
