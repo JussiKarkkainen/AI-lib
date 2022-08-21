@@ -1,8 +1,21 @@
-# Based on https://github.com/mattjj/autodidact
-import numpy as np
 from core.tensor import Tensor
 from utils.misc import change_vars
-from typing import Tuple
+
+
+def topological_sort(root):
+    order, vis = list(), set()
+    def _topo(root):
+        if root not in vis:
+            vis.add(root)
+            for p in root._graph.parents:
+                _topo(p)
+                order.append(root)
+        return order
+    return _topo(root)
+
+def backward(root):
+    for node in reversed(topological_sort(root)):
+        node.backward()
 
 def grad(func, argnums):
     '''
@@ -28,5 +41,6 @@ def make_vjp(func, x):
     end_value = func(*x)
     def vjp(): 
         return end_value.backward()
+        #return backward(end_value)
     return vjp, end_value
      
