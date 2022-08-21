@@ -1,16 +1,27 @@
 from graphviz import Digraph
-from core.ops import Ops
+from core.buffer import Ops
 
-def print_graph(graph):
+def trace(root):
+    nodes, edges = list(), list()
+    def graph(root):
+        if root not in nodes:
+            nodes.append(root)
+            if root._graph is not None:
+                for child in [root._graph]:
+                    edges.append(child)
+                    [graph(n) for n in root._graph.parents]
+    graph(root)
+    return nodes, edges
+
+def print_graph(root, format='svg', rankdir='LR'):
     ''' Visualizing graphs for backpropagation'''
-    viz = DiGraph()
+    viz = Digraph(format=format, graph_attr={'rankdir': rankdir})
     viz.attr(rankdir='LR', size='10, 8')
-    viz.attr('node', shape='circle')
-    for node in graph:
-        viz.node(node.name, label=node.name.spilt('/')[0], shape='circle')
-    for node in graph:
-        if isinstance(node, Ops):
-            for i in node.inputs:
-                viz.edge(i.name, node.name, label=i.name)
-
+    nodes, edges = trace(root)
+    for n in nodes:
+        viz.node(name=str(id(n)), label="data: %s" % str(n.data), shape='record')
+    for i, n in enumerate(nodes):
+        if n._graph is not None:
+            for p in n._graph.parents:
+                viz.edge(str(id(p)), str(id(n)), label=(str(edges[i]).split("object")[0]))
     return viz

@@ -12,7 +12,7 @@ class Function:
         self.saved_inputs = [] 
         self.input_grad = [x.requires_grad for x in self.parents] 
         self.requires_grad = any(self.input_grad)
-
+        
     def save_for_backward(self, *x):
         self.saved_inputs.extend(x)
 
