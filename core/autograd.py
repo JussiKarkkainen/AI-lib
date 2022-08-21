@@ -13,16 +13,23 @@ def topological_sort(root):
         return order
     return _topo(root)
 
-def backward(root):
-    root.grad = Tensor.ones(root.shape)
+def backward(g, root):
+    gradients = {root: g}
     for node in reversed(topological_sort(root)):
-        grads = node._graph.derivative(node.grad.bufferdata)
+        outgrads = gradients.pop(node)
+        outgrads = Tensor(outgrads) if not isinstance(outgrads, Tensor) else outgrads
+        grads = node._graph.derivative(outgrads.bufferdata)
         grads = [grads] if len(node._graph.parents) == 1 else grads
         grads = [Tensor(g) for g in grads if g is not None]
+        for p, g in zip(node._graph.parents, grads):
+            print(p, g)
+            gradients[p] = g if gradients.get(p) is None else gradients.get(p)+g
+    return outgrads
+'''
         for ins, grad in zip(node._graph.parents, grads):
             if grad is not None:
                 ins.grad = grad if ins.grad is None else ins.grad+grad
-
+'''
 def grad(func, argnums):
     '''
     Constuct the gradient function that returns the gradient of 
@@ -37,7 +44,7 @@ def grad(func, argnums):
         vjp, ans = make_vjp(fun, args)
         if ans.shape != (1,):
             raise TypeError("Grad only works with scalar output functions")
-        return vjp()
+        return vjp(Tensor.ones(ans.shape))
     return gradfun
 
 def make_vjp(func, x):
@@ -45,7 +52,7 @@ def make_vjp(func, x):
     Construct function for vector-Jacobian product
     '''
     end_value = func(*x)
-    def vjp(): 
-        return backward(end_value)
+    def vjp(g): 
+        return backward(g, end_value)
     return vjp, end_value
      
