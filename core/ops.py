@@ -19,7 +19,7 @@ class Function:
     def forward(self, *args, **kwargs):
         raise NotImplementedError
 
-    def backward(self, *args, **kwargs):
+    def derivative(self, *args, **kwargs):
         raise NotImplementedError
     
     @classmethod
@@ -36,7 +36,7 @@ class ReLU(Function):
         self.save_for_backward(x)
         return x.unary_op(UnaryOp.ReLU)
 
-    def backward(self, dout):
+    def derivative(self, dout):
         return self.saved_inputs[0].unary_op(UnaryOp.Sign).unary_op(UnaryOp.ReLU).binary_op(BinaryOp.Mul, dout)
 
 # BinaryOp
@@ -44,7 +44,7 @@ class Add(Function):
     def forward(self, x, y):
         return x.binary_op(BinaryOp.Add, y)
 
-    def backward(self, dout):
+    def derivative(self, dout):
         return dout if self.input_grad[0] else None, \
                dout if self.input_grad[1] else None
 
@@ -53,7 +53,7 @@ class Mul(Function):
         self.save_for_backward(x, y)
         return x.binary_op(BinaryOp.Mul, y)
 
-    def backward(self, dout):
+    def derivative(self, dout):
         x_grad = self.saved_inputs[1].binary_op(BinaryOp.Mul, dout) if self.input_grad[0] else None
         y_grad = self.saved_inputs[0].binary_op(BinaryOp.Mul, dout) if self.input_grad[1] else None
         return x_grad, y_grad 
@@ -62,7 +62,7 @@ class Div(Function):
     def forward(self, x, y):
         return x.binary_op(BinaryOp.Div, y)
 
-    def backward(self, x, y, dout):
+    def derivative(self, x, y, dout):
         b = self.saved_inputs[1]
         a = self.saved_inputs[0]
         y_grad = dout.binary_op(BinaryOp.Div, b) 
@@ -73,7 +73,7 @@ class Pow(Function):
     def forward(self, x, y):
         return x.binary_op(BinaryOp.Pow, y)
 
-    def backward(self, dout):
+    def derivative(self, dout):
         x, y, powxy = ctx.saved_inputs
         grad_x, grad_y = None, None
         if self.input_grad[0]:
@@ -90,7 +90,7 @@ class Sum(Function):
         self.shape = x.op.arg.shape 
         return x.reduce_op(ReduceOp.Sum, axis)
     
-    def backward(self, dout):
+    def derivative(self, dout):
         return dout.transform_op(TransformOp.Expand, self.shape)
 
 class Max(Function):
@@ -99,7 +99,7 @@ class Max(Function):
         self.save_for_backward(x, out)
         return out
 
-    def backward(self, x, dout):
+    def derivative(self, x, dout):
         pass
 
 #TransformOp
@@ -108,7 +108,7 @@ class Reshape(Function):
         self.shape = shape
         return x.transform_op(TransformOp.Reshape, shape)
     
-    def backward(self, dout):
+    def derivative(self, dout):
         return dout.transform_op(TransformOp.Reshape, self.shape)
 
 class Permute(Function):
@@ -116,7 +116,7 @@ class Permute(Function):
         self.dims = dims
         return x.transform_op(TransformOp.Permute, dims)
     
-    def backward(self, dout):
+    def derivative(self, dout):
         return dout.transform_op(TransformOp.Permute, tuple(argsort(self.dims)))
 
 class Expand(Function):
@@ -124,7 +124,7 @@ class Expand(Function):
         self.shape = shape
         return x.transform_op(TransformOp.Expand, shape)
     
-    def backward(self, dout):
+    def derivative(self, dout):
         return dout.reduce_op(ReduceOp.Sum, self.shape)
 
 # TensorOp
@@ -133,7 +133,7 @@ class Matmul(Function):
         self.save_for_backward(x, y)
         return x.tensor_op(TensorOp.Matmul, y)
 
-    def backward(self, dout):
+    def derivative(self, dout):
         self.shapex = self.saved_inputs[1].op.arg.shape
         self.shapey = self.saved_inputs[0].op.arg.shape
         x_t = self.saved_inputs[1].transform_op(TransformOp.Permute, self.shapex, True)
@@ -146,5 +146,5 @@ class Conv(Function):
     def forward(self, x, y):
         pass
 
-    def backward(self, dout):
+    def derivative(self, dout):
         pass

@@ -38,32 +38,7 @@ class Tensor:
 
     def device(self):
         return self.device
-
-    # These won't be needed in the future, but i'll leave them incase I change my mind
-    def topological_sort(self):
-        order = []
-        visited_nodes = set()
-        def _topo(node):
-            visited_nodes.add(node)
-            if node._graph:
-                [_topo(i) for i in node._graph.parents if i not in visited_nodes]
-                order.append(node)
-            return order
-        return _topo(self)
-
-    def backward(self):
-        self.grad = Tensor.ones(self.shape, requires_grad=False)
-        visited = set()
-        for node in reversed(self.topological_sort()):
-            if not any(x.requires_grad for x in node._graph.parents): 
-                continue
-            grads = node._graph.backward(node.grad.bufferdata)
-            grads = [Tensor(g, requires_grad=False) if g is not None else None
-                for g in ([grads] if len(node._graph.parents) == 1 else grads)] 
-            for ins, grad in zip(node._graph.parents, grads):
-                if grad is not None and ins.requires_grad:
-                    ins.grad = grad if ins.grad is None else ins.grad+grad
-
+    
     # Functions for creating tensors 
     @classmethod 
     def arange(cls, end, start=0, **kwargs):

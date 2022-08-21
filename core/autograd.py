@@ -1,21 +1,27 @@
 from core.tensor import Tensor
 from utils.misc import change_vars
 
-
 def topological_sort(root):
     order, vis = list(), set()
-    def _topo(root):
-        if root not in vis:
-            vis.add(root)
-            for p in root._graph.parents:
-                _topo(p)
-                order.append(root)
+    def _topo(node):
+        if node not in vis:
+            vis.add(node)
+            if node._graph:
+                for p in root._graph.parents:
+                    _topo(p)
+                    order.append(node)
         return order
     return _topo(root)
 
 def backward(root):
+    root.grad = Tensor.ones(root.shape)
     for node in reversed(topological_sort(root)):
-        node.backward()
+        grads = node._graph.derivative(node.grad.bufferdata)
+        grads = [grads] if len(node._graph.parents) == 1 else grads
+        grads = [Tensor(g) for g in grads if g is not None]
+        for ins, grad in zip(node._graph.parents, grads):
+            if grad is not None:
+                ins.grad = grad if ins.grad is None else ins.grad+grad
 
 def grad(func, argnums):
     '''
@@ -40,7 +46,6 @@ def make_vjp(func, x):
     '''
     end_value = func(*x)
     def vjp(): 
-        return end_value.backward()
-        #return backward(end_value)
+        return backward(end_value)
     return vjp, end_value
      
