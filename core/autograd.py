@@ -18,7 +18,7 @@ def backward(g, root):
     for node in reversed(topological_sort(root)):
         outgrads = gradients.pop(node)
         outgrads = Tensor(outgrads) if not isinstance(outgrads, Tensor) else outgrads
-        grads = node._graph.derivative(outgrads.bufferdata)
+        grads = node._graph.vjp(outgrads.bufferdata)
         grads = [grads] if len(node._graph.parents) == 1 else grads
         grads = [Tensor(g) for g in grads if g is not None]
         for p, g in zip(node._graph.parents, grads):
