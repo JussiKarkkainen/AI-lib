@@ -6,7 +6,7 @@ from core.buffer import Buffer, Device
 from core.backend.cpu_ops import CpuBuffer
 
 class Tensor:
-    def __init__(self, data, device=Device.default, requires_grad=True):
+    def __init__(self, data, device=Device.default):
         if isinstance(data, list):
             self.data = np.array(data, dtype=np.float32)
         elif isinstance(data, CpuBuffer):
@@ -19,15 +19,11 @@ class Tensor:
             self.bufferdata = Buffer.fromCpu(self.data.astype(np.float32), device)
             self.data = data
 
-        #self.grad = None 
-        self.requires_grad = requires_grad
         self.device = device
-
         self._graph = None 
 
     def __repr__(self):
         return f"<Tensor: data={self.data}>"
-        #Grad={self.grad.bufferdata if self.grad else None}>
         
     @property
     def dtype(self):

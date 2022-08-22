@@ -22,14 +22,9 @@ def backward(g, root):
         grads = [grads] if len(node._graph.parents) == 1 else grads
         grads = [Tensor(g) for g in grads if g is not None]
         for p, g in zip(node._graph.parents, grads):
-            print(p, g)
             gradients[p] = g if gradients.get(p) is None else gradients.get(p)+g
-    return outgrads
-'''
-        for ins, grad in zip(node._graph.parents, grads):
-            if grad is not None:
-                ins.grad = grad if ins.grad is None else ins.grad+grad
-'''
+    return [x for x in reversed(gradients.values())]
+
 def grad(func, argnums):
     '''
     Constuct the gradient function that returns the gradient of 

@@ -10,8 +10,6 @@ class Function:
         self.parents = tuple([x for x in tensors if type(x) == Tensor])
         self.device = device
         self.saved_inputs = [] 
-        self.input_grad = [x.requires_grad for x in self.parents] 
-        self.requires_grad = any(self.input_grad)
         
     def save_for_backward(self, *x):
         self.saved_inputs.extend(x)
@@ -25,9 +23,8 @@ class Function:
     @classmethod
     def execute(cls, *x, **kwargs):
         func = cls(*x, x[0].device)
-        ret = Tensor(func.forward(*[s.bufferdata for s in x], **kwargs), requires_grad=func.requires_grad)
-        if func.requires_grad:
-            ret._graph = func
+        ret = Tensor(func.forward(*[s.bufferdata for s in x], **kwargs))
+        ret._graph = func
         return ret
 
 # UnaryOp
@@ -45,8 +42,7 @@ class Add(Function):
         return x.binary_op(BinaryOp.Add, y)
 
     def derivative(self, dout):
-        return dout if self.input_grad[0] else None, \
-               dout if self.input_grad[1] else None
+        return dout, dout
 
 class Mul(Function):
     def forward(self, x, y):
@@ -54,8 +50,8 @@ class Mul(Function):
         return x.binary_op(BinaryOp.Mul, y)
 
     def derivative(self, dout):
-        x_grad = self.saved_inputs[1].binary_op(BinaryOp.Mul, dout) if self.input_grad[0] else None
-        y_grad = self.saved_inputs[0].binary_op(BinaryOp.Mul, dout) if self.input_grad[1] else None
+        x_grad = self.saved_inputs[1].binary_op(BinaryOp.Mul, dout)
+        y_grad = self.saved_inputs[0].binary_op(BinaryOp.Mul, dout)
         return x_grad, y_grad 
 
 class Div(Function):
