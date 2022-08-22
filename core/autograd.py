@@ -37,8 +37,6 @@ def grad(func, argnums):
         # Replace args with *x
         fun = lambda *x : func(*change_vars(args, argnums, x), **kwargs)
         vjp, ans = make_vjp(fun, args)
-        if ans.shape != (1,):
-            raise TypeError("Grad only works with scalar output functions")
         return vjp(Tensor.ones(ans.shape))
     return gradfun
 
@@ -47,6 +45,8 @@ def make_vjp(func, x):
     Construct function for vector-Jacobian product
     '''
     end_value = func(*x)
+    if end_value.shape != (1,):
+        raise TypeError("Grad only works with scalar output functions")
     def vjp(g): 
         return backward(g, end_value)
     return vjp, end_value
