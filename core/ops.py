@@ -3,7 +3,7 @@ import numpy as np
 from core.tensor import Tensor
 from core.buffer import Buffer
 from core.buffer import BinaryOp, UnaryOp, ReduceOp, TransformOp, TensorOp
-from utils.misc import argsort
+from utils.misc import argsort, im2col_indices
 
 class Function:
     def __init__(self, *tensors, device=None):
@@ -138,9 +138,19 @@ class Matmul(Function):
         y_grad = y_t.tensor_op(TensorOp.Matmul, dout)
         return x_grad, y_grad
 
-class Conv(Function):
-    def forward(self, x, y):
-        pass
+class Corr2d(Function):
+    def forward(self, x, w, padding, stride):
+        ''' Convolution on inputs with shapes:
+        x -> input = DxCxHxW
+        w -> kernel = NKxCzHKxWk
+        '''
+        X_cols = im2col_indices(x.op.arg, w.shape[2], w.shape[3], padding, stride)
+        W_cols = w.transform_op(TransformOp.Reshape(w.shape[0], -1))
+        out = W_cols.tensor_op(TensorOp.Matmul, X_cols)
+        out = out.reshape(w.shape[0], out.shape[2], out.shape[3], x.shape[0])
+        out = out.transform_op(TransformOp.Permute, (3, 0, 1, 2))
+        return out
+        
 
     def vjp(self, dout):
         pass

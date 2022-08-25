@@ -67,7 +67,7 @@ class Buffer:
 
     @staticmethod
     def fromCpu(x, device):
-        return Buffer(op=Ops(LoadOp.fromCpu, tuple(), x.copy()), op_type=LoadOp, device=device)
+        return Buffer(op=Ops(LoadOp.fromCpu, tuple(), x.copy()), op_type=LoadOp, device=device, shape=x.shape)
 
     def binary_op(x, op, y):
         assert x.device == y.device

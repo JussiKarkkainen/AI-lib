@@ -81,8 +81,13 @@ class Tensor:
     def matmul(self, x):
         return Tensor.Matmul(self, x)
     
-    def conv2d(self, x):
-        return Tensor.Conv(self, x)
+    def conv2d(self, x, padding=0, stride=1):
+        # Inputs to Corr2d needs to be of shape: input=DxCxHxW, kernel=NKxCxHKxWK
+        if len(self.shape) == 2:
+            self = self.reshape((1, 1, self.shape[0], self.shape[1]))
+        if len(x.shape) == 2:
+            x = x.reshape((1, 1, x.shape[0], x.shape[1]))
+        return Tensor.Corr2d(self, x, padding=padding, stride=stride)
    
     def sum(self, axis=None):
         axis = range(len(self.shape)) if axis == None else axis
