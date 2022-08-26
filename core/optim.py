@@ -10,7 +10,7 @@ class Optim:
             param.grad = None
 
 class SGD(Optim):
-    def __init__(self, params, lr, momentum=0, weight_decay=0.0):
+    def __init__(self, params, lr, momentum=0.0, weight_decay=0.0):
         super().__init__()
         self.lr = lr
         self.momentum = momentum

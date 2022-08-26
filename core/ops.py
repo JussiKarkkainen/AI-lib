@@ -144,10 +144,14 @@ class Corr2d(Function):
         x -> input = DxCxHxW
         w -> kernel = NKxCzHKxWk
         '''
+        N, C, H, W = x.shape
         X_cols = im2col_indices(x.op.arg, w.shape[2], w.shape[3], padding, stride)
-        W_cols = w.transform_op(TransformOp.Reshape(w.shape[0], -1))
+        W_cols = w.transform_op(TransformOp.Reshape, (w.shape[0], -1))
+        out_height = int(((H + 2*padding - w.shape[2]) / stride + 1))
+        out_width = int(((W + 2*padding - w.shape[3]) / stride + 1))
         out = W_cols.tensor_op(TensorOp.Matmul, X_cols)
-        out = out.reshape(w.shape[0], out.shape[2], out.shape[3], x.shape[0])
+        print((w.shape[0], out_height, out_width, N))
+        out = out.reshape((w.shape[0], out_height, out_width, N))
         out = out.transform_op(TransformOp.Permute, (3, 0, 1, 2))
         return out
         
