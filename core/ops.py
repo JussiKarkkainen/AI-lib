@@ -3,7 +3,7 @@ import numpy as np
 from core.tensor import Tensor
 from core.buffer import Buffer
 from core.buffer import BinaryOp, UnaryOp, ReduceOp, TransformOp, TensorOp
-from utils.misc import argsort, im2col_indices
+from utils.misc import argsort, im2col_indices, col2im_indices
 
 class Function:
     def __init__(self, *tensors, device=None):
@@ -142,19 +142,29 @@ class Corr2d(Function):
     def forward(self, x, w, padding, stride):
         ''' Convolution on inputs with shapes:
         x -> input = DxCxHxW
-        w -> kernel = NKxCzHKxWk
+        w -> kernel = NKxCxHKxWk
         '''
+        self.save_for_backward(x, w)    # use self.C = C to save params for backward
         N, C, H, W = x.shape
-        X_cols = im2col_indices(x.op.arg, w.shape[2], w.shape[3], padding, stride)
-        W_cols = w.transform_op(TransformOp.Reshape, (w.shape[0], -1))
-        out_height = int(((H + 2*padding - w.shape[2]) / stride + 1))
-        out_width = int(((W + 2*padding - w.shape[3]) / stride + 1))
-        out = W_cols.tensor_op(TensorOp.Matmul, X_cols)
-        print((w.shape[0], out_height, out_width, N))
-        out = out.reshape((w.shape[0], out_height, out_width, N))
+        self.pad, self.stride = padding, stride
+        self.n_K, self.c_K, self.h_K, self.w_K = w.shape
+        self.X_cols = im2col_indices(x.op.arg, self.h_K, self.w_K, padding, stride)
+        W_cols = w.transform_op(TransformOp.Reshape, (self.n_K, -1))
+        out_height = int(((H + 2*padding - self.h_K) / stride + 1))
+        out_width = int(((W + 2*padding - self.w_K) / stride + 1))
+        out = W_cols.tensor_op(TensorOp.Matmul, self.X_cols)
+        out = out.reshape((self.n_K, out_height, out_width, N))
         out = out.transform_op(TransformOp.Permute, (3, 0, 1, 2))
         return out
         
-
     def vjp(self, dout):
-        pass
+        x, w = self.saved_inputs[0], self.saved_inputs[1]
+        # We might need to return cache from forward
+        dout_T = dout.transform_op(TransformOp.Permute, (1, 2, 3, 0))
+        dout_reshape = dout_T.transform_op(TransformOp.Reshape, (self.n_K, -1))
+        w_grad = dout_reshape.tensor_op(TensorOp.Matmul, (Buffer.fromCpu(self.X_cols, device="cpu").transform_op(TransformOp.Permute, None)))
+        w_grad = w_grad.reshape(w.shape)
+        w_reshape = w.transform_op(TransformOp.Reshape, (self.n_K, -1))
+        x_grad_col = w_reshape.transform_op(TransformOp.Permute, None).tensor_op(TensorOp.Matmul, dout_reshape)
+        x_grad = col2im_indices(x_grad_col, x.shape, self.h_K, self.w_K, padding=self.pad, stride=self.stride)
+        return x_grad, w_grad

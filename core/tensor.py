@@ -90,9 +90,12 @@ class Tensor:
         return Tensor.Corr2d(self, x, padding=padding, stride=stride)
    
     def sum(self, axis=None):
-        axis = range(len(self.shape)) if axis == None else axis
-        axis = tuple([x if x >= 0 else x+len(self.shape) for x in axis])
-        return Tensor.Sum(self, axis=axis)
+        dims = range(len(self.shape)) if axis == None else axis
+        dims = tuple([x if x >= 0 else x+len(self.shape) for x in dims])
+        out = Tensor.Sum(self, axis=dims)
+        #if axis == None:
+        #   out = out.reshape(-1)
+        return out
 
     def reshape(self, shape):
         return Tensor.Reshape(self, shape=shape)

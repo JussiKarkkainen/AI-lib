@@ -7,9 +7,9 @@ def topological_sort(root):
         if node not in vis:
             vis.add(node)
             if node._graph:
-                for p in root._graph.parents:
+                for p in node._graph.parents:
                     _topo(p)
-                    order.append(node)
+                order.append(node)
         return order
     return _topo(root)
 
@@ -45,7 +45,7 @@ def make_vjp(func, x):
     Construct function for vector-Jacobian product
     '''
     end_value = func(*x)
-    if end_value.shape != (1,):
+    if (end_value.shape[-1], end_value.shape[-2]) != (1,1):
         raise TypeError("Grad only works with scalar output functions")
     def vjp(g): 
         return backward(g, end_value)
