@@ -7,11 +7,11 @@ import numpy as np
 
 # These ops will most likely change, but at least get them to work
 BinaryOp = Enum("BinaryOp", ["Add", "Mul", "Div", "Pow"])
-UnaryOp = Enum("UnaryOp", ["ReLU", "Sign"])
+UnaryOp = Enum("UnaryOp", ["ReLU", "Sign", "Exp"])
 TensorOp = Enum("TensorOp", ["Matmul", "Conv"])
 LoadOp = Enum("LoadOp", ["fromCpu"])
 ReduceOp = Enum("ReduceOp", ["Sum", "Max"])
-TransformOp = Enum("TransformOp", ["Reshape", "Permute", "Expand"])
+TransformOp = Enum("TransformOp", ["Reshape", "Transpose", "Expand"])
 Ops = Union[BinaryOp, UnaryOp, ReduceOp, TransformOp, TensorOp, LoadOp] 
 
 class Device:
@@ -88,7 +88,7 @@ class Buffer:
     def transform_op(self, op, shape, return_buf=False):
         if shape == self.op.arg.shape and (op == TransformOp.Reshape or op == TransformOp.Expand):
             return self.op.arg
-        if op == TransformOp.Permute and shape == self.op.arg.shape:
+        if op == TransformOp.Transpose and shape == self.op.arg.shape:
             shape = None
         src = tuple(self.op if self.op_type == TransformOp else i for i in tuple([self]))
         buf = Buffer(Ops(op, src), TransformOp, self.device)

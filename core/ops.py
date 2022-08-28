@@ -36,6 +36,15 @@ class ReLU(Function):
     def vjp(self, dout):
         return self.saved_inputs[0].unary_op(UnaryOp.Sign).unary_op(UnaryOp.ReLU).binary_op(BinaryOp.Mul, dout)
 
+class Exp(Function):
+    def forward(self, x):
+        self.save_for_backward(x)
+        return x.unary_op(UnaryOp.Exp)
+
+    def vjp(self, dout):
+        x = self.saved_inputs[0]
+        return x.unary_op(UnaryOp.Exp).binary_op(BinaryOp.Mul, dout)
+
 # BinaryOp
 class Add(Function):
     def forward(self, x, y):
@@ -107,13 +116,13 @@ class Reshape(Function):
     def vjp(self, dout):
         return dout.transform_op(TransformOp.Reshape, self.shape)
 
-class Permute(Function):
+class Transpose(Function):
     def forward(self, x, dims):
         self.dims = dims
-        return x.transform_op(TransformOp.Permute, dims)
+        return x.transform_op(TransformOp.Transpose, dims)
     
     def vjp(self, dout):
-        return dout.transform_op(TransformOp.Permute, tuple(argsort(self.dims)))
+        return dout.transform_op(TransformOp.Transpose, tuple(argsort(self.dims)))
 
 class Expand(Function):
     def forward(self, x, shape):
@@ -132,9 +141,9 @@ class Matmul(Function):
     def vjp(self, dout):
         self.shapex = self.saved_inputs[1].op.arg.shape
         self.shapey = self.saved_inputs[0].op.arg.shape
-        x_t = self.saved_inputs[1].transform_op(TransformOp.Permute, self.shapex, True)
+        x_t = self.saved_inputs[1].transform_op(TransformOp.Transpose, self.shapex, True)
         x_grad = dout.tensor_op(TensorOp.Matmul, x_t)
-        y_t = self.saved_inputs[0].transform_op(TransformOp.Permute, self.shapey, True)
+        y_t = self.saved_inputs[0].transform_op(TransformOp.Transpose, self.shapey, True)
         y_grad = y_t.tensor_op(TensorOp.Matmul, dout)
         return x_grad, y_grad
 
@@ -154,17 +163,17 @@ class Corr2d(Function):
         out_width = int(((W + 2*padding - self.w_K) / stride + 1))
         out = W_cols.tensor_op(TensorOp.Matmul, self.X_cols)
         out = out.reshape((self.n_K, out_height, out_width, N))
-        out = out.transform_op(TransformOp.Permute, (3, 0, 1, 2))
+        out = out.transform_op(TransformOp.Transpose, (3, 0, 1, 2))
         return out
         
     def vjp(self, dout):
         x, w = self.saved_inputs[0], self.saved_inputs[1]
         # We might need to return cache from forward
-        dout_T = dout.transform_op(TransformOp.Permute, (1, 2, 3, 0))
+        dout_T = dout.transform_op(TransformOp.Transpose, (1, 2, 3, 0))
         dout_reshape = dout_T.transform_op(TransformOp.Reshape, (self.n_K, -1))
-        w_grad = dout_reshape.tensor_op(TensorOp.Matmul, (Buffer.fromCpu(self.X_cols, device="cpu").transform_op(TransformOp.Permute, None)))
+        w_grad = dout_reshape.tensor_op(TensorOp.Matmul, (Buffer.fromCpu(self.X_cols, device="cpu").transform_op(TransformOp.Transpose, None)))
         w_grad = w_grad.reshape(w.shape)
         w_reshape = w.transform_op(TransformOp.Reshape, (self.n_K, -1))
-        x_grad_col = w_reshape.transform_op(TransformOp.Permute, None).tensor_op(TensorOp.Matmul, dout_reshape)
+        x_grad_col = w_reshape.transform_op(TransformOp.Transpose, None).tensor_op(TensorOp.Matmul, dout_reshape)
         x_grad = col2im_indices(x_grad_col, x.shape, self.h_K, self.w_K, padding=self.pad, stride=self.stride)
         return x_grad, w_grad

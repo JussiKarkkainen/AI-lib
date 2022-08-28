@@ -9,6 +9,8 @@ class CpuBuffer(np.ndarray):
         return np.add(x, y)
     def relu(x):
         return np.maximum(x, 0)
+    def exp(x):
+        return np.exp(x)
     def power(x, y):
         return np.power(x, y)
     def div(x, y):
@@ -22,7 +24,7 @@ class CpuBuffer(np.ndarray):
         return np.sum(x, axis=axis, keepdims=keepdims)
     def reshape(x, arg):
         return np.reshape(x, arg)
-    def permute(x, arg):
+    def transpose(x, arg):
         return np.transpose(x, arg)
     def expand(x, arg):
         return np.broadcast_to(x, arg).view(CpuBuffer)
@@ -40,6 +42,8 @@ class CpuBuffer(np.ndarray):
             return CpuBuffer.relu(x)
         elif op == UnaryOp.Sign:
             return CpuBuffer.sign(x)
+        elif op == UnaryOp.Exp:
+            return CpuBuffer.exp(x)
 
     def binary_op(x, op, y):
         if op == BinaryOp.Add:
@@ -60,8 +64,8 @@ class CpuBuffer(np.ndarray):
     def transform_op(x, op, arg=None):
         if op == TransformOp.Reshape:
             return x.reshape(arg)
-        elif op == TransformOp.Permute:
-            return x.permute(arg)
+        elif op == TransformOp.Transpose:
+            return x.transpose(arg)
         elif op == TransformOp.Expand:
             return x.expand(arg)
 

@@ -7,7 +7,7 @@ from core.backend.cpu_ops import CpuBuffer
 
 class Tensor:
     def __init__(self, data, device=Device.default):
-        if isinstance(data, list):
+        if isinstance(data, list) or isinstance(data, int) or isinstance(data, float):
             self.data = np.array(data, dtype=np.float32)
         elif isinstance(data, CpuBuffer):
             self.data = np.array(data, dtype=np.float32)
@@ -60,23 +60,41 @@ class Tensor:
     @classmethod
     def zeros(cls, *shape, **kwargs):
         return cls(np.zeros(shape, dtype=np.float32), **kwargs)
-  
+   
+    def __neg__(self):
+        return self * -1.
+    def __sub__(self, x):
+        return self + (-x)
+    def __rsub__(self, x):
+        return self + (-x)
+    def tanh(self):
+        return ((2*self).exp() - 1) / ((2*self).exp() + 1)
+    def sigmoid(self):
+        return (1. + (-self).exp()) ** -1
+    def sqrt(self):
+        return self.pow(0.5)
+
     def flatten(self, start_dim=0, end_dim=-1):
         new_shape = list(self.shape[start_dim:end_dim])
         new_shape.append(self.shape[end_dim])
-        new_shape = (functools.reduce(lambda x, y : x*y, new_shape),)
+        new_shape = functools.reduce(lambda x, y : x*y, new_shape)
         return Tensor.reshape(self, new_shape)
-
+    
     def relu(self):
         return Tensor.ReLU(self)
-
+    def exp(self):
+        return Tensor.Exp(self)
     def add(self, x):
+        x = Tensor(x) if not isinstance(x, Tensor) else x
         return Tensor.Add(self, x)
     def mul(self, x):
+        x = Tensor(x) if not isinstance(x, Tensor) else x
         return Tensor.Mul(self, x)
     def div(self, x):
+        x = Tensor(x) if not isinstance(x, Tensor) else x
         return Tensor.Div(self, x)
     def pow(self, x):
+        x = Tensor(x) if not isinstance(x, Tensor) else x
         return Tensor.Pow(self, x)
     def matmul(self, x):
         return Tensor.Matmul(self, x)
@@ -102,7 +120,7 @@ class Tensor:
     def expand(self, shape):
         return Tensor.Expand(self, shape=shape)
     def transpose(self, dims=None):
-        return Tensor.Permute(self, dims=dims)
+        return Tensor.Transpose(self, dims=dims)
 
 def register(name, function):
     def attach(*x, **kwargs):
@@ -114,5 +132,7 @@ for name, cls in inspect.getmembers(importlib.import_module("core.ops"), inspect
 
 def register_op(name, op):
     setattr(Tensor, f"__{name}__", op)
+    setattr(Tensor, f"__r{name}__", op)
 for name in ["add", "mul", "div", "pow", "matmul"]:
     register_op(name, getattr(Tensor, name))
+    register_op("truediv", getattr(Tensor, "div"))
