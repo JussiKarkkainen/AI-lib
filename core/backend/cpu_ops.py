@@ -24,7 +24,7 @@ class CpuBuffer(np.ndarray):
         return np.sum(x, axis=axis, keepdims=keepdims)
     def reshape(x, arg):
         return np.reshape(x, arg)
-    def transpose(x, arg):
+    def permute(x, arg):
         return np.transpose(x, arg)
     def expand(x, arg):
         return np.broadcast_to(x, arg).view(CpuBuffer)
@@ -64,7 +64,7 @@ class CpuBuffer(np.ndarray):
     def transform_op(x, op, arg=None):
         if op == TransformOp.Reshape:
             return x.reshape(arg)
-        elif op == TransformOp.Transpose:
+        elif op == TransformOp.Permute:
             return x.transpose(arg)
         elif op == TransformOp.Expand:
             return x.expand(arg)

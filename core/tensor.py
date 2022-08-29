@@ -77,7 +77,7 @@ class Tensor:
     def flatten(self, start_dim=0, end_dim=-1):
         new_shape = list(self.shape[start_dim:end_dim])
         new_shape.append(self.shape[end_dim])
-        new_shape = functools.reduce(lambda x, y : x*y, new_shape)
+        new_shape = (functools.reduce(lambda x, y : x*y, new_shape),)
         return Tensor.reshape(self, new_shape)
     
     def relu(self):
@@ -111,8 +111,6 @@ class Tensor:
         dims = range(len(self.shape)) if axis == None else axis
         dims = tuple([x if x >= 0 else x+len(self.shape) for x in dims])
         out = Tensor.Sum(self, axis=dims)
-        #if axis == None:
-        #   out = out.reshape(-1)
         return out
 
     def reshape(self, shape):
@@ -120,7 +118,7 @@ class Tensor:
     def expand(self, shape):
         return Tensor.Expand(self, shape=shape)
     def transpose(self, dims=None):
-        return Tensor.Transpose(self, dims=dims)
+        return Tensor.Permute(self, dims=dims)
 
 def register(name, function):
     def attach(*x, **kwargs):
