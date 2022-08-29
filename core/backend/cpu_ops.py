@@ -1,4 +1,5 @@
 import numpy as np
+from numpy.lib.stride_tricks import as_strided
 from core.buffer import UnaryOp, BinaryOp, ReduceOp, TransformOp, TensorOp
 
 class CpuBuffer(np.ndarray):
@@ -26,6 +27,8 @@ class CpuBuffer(np.ndarray):
         return np.reshape(x, arg)
     def permute(x, arg):
         return np.transpose(x, arg)
+    def pool(x, **kwargs):
+        return as_strided(x, **kwargs)
     def expand(x, arg):
         return np.broadcast_to(x, arg).view(CpuBuffer)
     def sign(x):
@@ -69,6 +72,8 @@ class CpuBuffer(np.ndarray):
         elif op == TransformOp.Expand:
             return x.expand(arg)
 
-    def tensor_op(x, op, y):
+    def tensor_op(x, op, y, **kwargs):
         if op == TensorOp.Matmul:
             return CpuBuffer.matmul(x, y)
+        if op == TensorOp.Pool:
+            return CpuBuffer.pool(x, **kwargs)

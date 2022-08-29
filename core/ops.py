@@ -147,6 +147,22 @@ class Matmul(Function):
         y_grad = y_t.tensor_op(TensorOp.Matmul, dout)
         return x_grad, y_grad
 
+class Pool2d(Function):
+    def forward(self, x, kernel_size, stride, padding, pooltype):
+        x = np.pad(x, padding, mode='constant')
+        out_shape = ((x.shape[0] - kernel_size) / stride + 1,
+                    (x.shape[1] - kernel_size) / stride + 1)
+        shape_w = (out_shape[0], out_shape[1], kernel_size, kernel_size)
+        stride_w = (stride*x.strides[0], stride*x.strides[1], x.strides[0], x.strides[1])
+        out = x.tensor_op(TensorOp.Pool2d, w_shape, stride_w) # Pool2d is actually just np.as_strided
+        if pooltype = "max":
+            return out.max(axis=(2, 3))
+        if pooltype = "avg":
+            return out.avg(axis=(2, 3))
+
+    def backward(self, dout):
+        pass
+
 class Corr2d(Function):
     def forward(self, x, w, padding, stride):
         ''' Convolution on inputs with shapes:

@@ -99,12 +99,22 @@ class Tensor:
     def matmul(self, x):
         return Tensor.Matmul(self, x)
     
-    def conv2d(self, x, padding=0, stride=1):
-        # Inputs to Corr2d needs to be of shape: input=DxCxHxW, kernel=NKxCxHKxWK
-        if len(self.shape) == 2:
-            self = self.reshape((1, 1, self.shape[0], self.shape[1]))
+    def _reshape_conv(x):
         if len(x.shape) == 2:
             x = x.reshape((1, 1, x.shape[0], x.shape[1]))
+            return x
+    
+    def maxpool2d(self, kernel_size, stride=0, padding=0):
+        self = self._reshape_conv()
+        return Tensor.Pool2d(self, kernel_size=kernel_size, stride=stride, padding=padding, pooltype="max")
+    def avgpool2d(self, kernel_size, stride=0, padding=0):
+        self = self._reshape_conv()
+        return Tensor.Pool2d(self, kernel_size=kernel_size, stride=stride, padding=padding, pooltype="avg")
+
+    def conv2d(self, x, padding=0, stride=1):
+        # Inputs to Corr2d needs to be of shape: input=DxCxHxW, kernel=NKxCxHKxWK
+        self = self._reshape_conv()
+        x = _reshape_conv(x)
         return Tensor.Corr2d(self, x, padding=padding, stride=stride)
    
     def sum(self, axis=None):
