@@ -5,10 +5,6 @@ class Optim:
     def step(self):
         raise NotImplementedError
 
-    def zero_grad(self):
-        for param in self.params:
-            param.grad = None
-
 class SGD(Optim):
     def __init__(self, params, lr, momentum=0.0, weight_decay=0.0):
         super().__init__()

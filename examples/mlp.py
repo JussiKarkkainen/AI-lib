@@ -15,13 +15,22 @@ class MLP(Model):
         self.out = Linear(256, 10)
 
     def forward(self, x):
-        h1 = Tensor.relu(self.w1(x))
-        h2 = Tensor.relu(self.w2(h1))
+        h1 = (self.w1(x)).relu()
+        h2 = (self.w2(h1)).relu()
         out = self.out(h2)
         return out
 
 
 net = MLP()
-optim = SGD(net.parameters, lr=0.01)
-lossfn = CrossEntropyLoss 
+params = net.parameters()
+optim = SGD()
+lossfn = CrossEntropyLoss()
+
+for epoch in range(10):
+    for X, y in zip(train_img, train_labels):
+        y_hat = net(X)
+        loss = loddfn(y_hat, y)
+        grads = grad(lossfn, 0)(params, X, y)
+        params = optim(params, lr=0.01)
+
 

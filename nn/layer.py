@@ -20,6 +20,14 @@ class Conv2d(Module):
         self.stride = stride
         self.padding = padding
         self.weights = Tensor.randn((kernel_size, kernel_size))
+        self.bias = Tensor.zeros(kernel_size) if bias else None 
 
     def forward(self, x):
-        return x.conv2d(stride=self.stride, padding=self.padding)
+        return x.conv2d(self.weights, padding=self.padding, stride=self.stride) + b 
+
+
+class AvgPool2d():
+    pass
+
+class MaxPool2d():
+    pass

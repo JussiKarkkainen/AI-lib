@@ -28,15 +28,15 @@ class AlexNet(Module):
         return out
 
 net = AlexNet()
-optim = SGD(net.parameters(), lr=0.01)
+params = net.parameters()
+optim = SGD()
 lossfn = CrossEntropyLoss()
 num_epochs = 10
 
 for epoch in range(num_epochs):
     for X, y in zip(train_img, train_labels):
         y_hat = net(X)
-        grads = grad(loss)(net.parameters(), X, y)
-        # Study jax training loops, my optimizer won't work with this
-
+        grads = grad(loss, 0)(params, X, y)
+        params = optim(params, lr=0.01) 
 
 
