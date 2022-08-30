@@ -25,7 +25,7 @@ def backward(g, root):
             gradients[p] = g if gradients.get(p) is None else gradients.get(p)+g
     return [x for x in reversed(gradients.values())]
 
-def grad(func, argnums):
+def grad(func, argnums=0):
     '''
     Constuct the gradient function that returns the gradient of 
     the given function w.r.t inputs
