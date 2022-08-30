@@ -150,17 +150,18 @@ class Matmul(Function):
 class Pool2d(Function):
     def forward(self, x, kernel_size, stride, padding, pooltype):
         N, C, H, W = x.shape
-        x = np.pad(x.op.arg, padding, mode='constant')
-        out_shape = ((H + 2*padding - kernel_size) / stride + 1,
-                    (W + 2*padding - kernel_size) / stride + 1)
-        w_shape = (out_shape[0], out_shape[1], kernel_size, kernel_size)
-        stride_w = (stride*x.strides[0], stride*x.strides[1], x.strides[0], x.strides[1])
-        x = Buffer.fromCpu(x, device="cpu")
-        out = x.tensor_op(TensorOp.Pool2d, w_shape, stride_w) # Pool2d is actually just np.as_strided
+        x_pad = np.pad(x.op.arg, padding, mode='constant')
+        x_pad = x_pad.reshape(x_pad.shape[2], x_pad.shape[3])
+        out_height = int(((H + 2*padding - kernel_size) // stride + 1))
+        out_width = int(((W + 2*padding - kernel_size) // stride + 1))
+        w_shape = (out_height, out_width, kernel_size, kernel_size)
+        stride_w = (stride*x_pad.strides[0], stride*x_pad.strides[1], x_pad.strides[0], x_pad.strides[1])
+        x_pad = Buffer.fromCpu(x_pad, device="cpu")
+        out = x_pad.transform_op(TransformOp.Pool2d, (w_shape, stride_w)) # Pool2d is actually just np.as_strided
         if pooltype == "max":
-            return out.max(axis=(2, 3))
+            return out.max(axis=(2, 3)).reshape(x.shape[0], x.shape[1], out_height, out_width)
         if pooltype == "avg":
-            return out.mean(axis=(2, 3))
+            return out.mean(axis=(2, 3)).reshape(x.shape[0], x.shape[1], out_height, out_width)
 
     def backward(self, dout):
         pass

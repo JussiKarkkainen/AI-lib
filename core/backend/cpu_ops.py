@@ -27,8 +27,8 @@ class CpuBuffer(np.ndarray):
         return np.reshape(x, arg)
     def permute(x, arg):
         return np.transpose(x, arg)
-    def pool(x, **kwargs):
-        return as_strided(x, **kwargs)
+    def strided(x, *args):
+        return as_strided(x, args[0][0], args[0][1])
     def expand(x, arg):
         return np.broadcast_to(x, arg).view(CpuBuffer)
     def sign(x):
@@ -71,9 +71,9 @@ class CpuBuffer(np.ndarray):
             return x.transpose(arg)
         elif op == TransformOp.Expand:
             return x.expand(arg)
+        if op == TransformOp.Pool2d:
+            return CpuBuffer.strided(x, arg)
 
-    def tensor_op(x, op, y, **kwargs):
+    def tensor_op(x, op, y):
         if op == TensorOp.Matmul:
             return CpuBuffer.matmul(x, y)
-        if op == TensorOp.Pool:
-            return CpuBuffer.pool(x, **kwargs)
