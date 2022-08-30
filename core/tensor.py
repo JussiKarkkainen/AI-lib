@@ -9,6 +9,8 @@ class Tensor:
     def __init__(self, data, device=Device.default):
         if isinstance(data, list) or isinstance(data, int) or isinstance(data, float):
             self.data = np.array(data, dtype=np.float32)
+        elif isinstance(data, Tensor):
+            self.data = np.array(data.data)
         elif isinstance(data, CpuBuffer):
             self.data = np.array(data, dtype=np.float32)
         elif isinstance(data, np.ndarray):
@@ -102,7 +104,7 @@ class Tensor:
     def _reshape_conv(x):
         if len(x.shape) == 2:
             x = x.reshape((1, 1, x.shape[0], x.shape[1]))
-            return x
+        return x
     
     def maxpool2d(self, kernel_size, stride=1, padding=0):
         self = self._reshape_conv()
