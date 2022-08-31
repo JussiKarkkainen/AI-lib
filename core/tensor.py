@@ -2,6 +2,7 @@ import numpy as np
 from typing import Optional
 import inspect, importlib, pyclbr
 import functools
+import math
 from core.buffer import Buffer, Device
 from core.backend.cpu_ops import CpuBuffer
 
@@ -61,7 +62,7 @@ class Tensor:
     
     @classmethod
     def zeros(cls, *shape, **kwargs):
-        return cls(np.zeros(shape, dtype=np.float32), **kwargs)
+        return cls(np.zeros(*shape, dtype=np.float32), **kwargs)
    
     def __neg__(self):
         return self * -1.
@@ -75,6 +76,9 @@ class Tensor:
         return (1. + (-self).exp()) ** -1
     def sqrt(self):
         return self.pow(0.5)
+    def mean(self, axis, keepdim=False):
+        x = Tensor.sum(axis=axis, keepdim=keepdim)
+        return x * (math.prod(x.shape)/math.prod(self.shape))
 
     def flatten(self, start_dim=0, end_dim=-1):
         new_shape = list(self.shape[start_dim:end_dim])

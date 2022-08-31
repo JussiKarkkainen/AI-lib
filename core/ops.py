@@ -104,8 +104,10 @@ class Max(Function):
         self.save_for_backward(x, out)
         return out
 
-    def vjp(self, x, dout):
-        pass
+    def vjp(self, dout):
+        x, out = self.saved_inputs
+        out_reshape = out.transform_op(TransformOp.Expand, x.shape)
+        # return 1 in the location of the maximum value * dout, 0 otherwise         
 
 #TransformOp
 class Reshape(Function):
@@ -149,22 +151,42 @@ class Matmul(Function):
 
 class Pool2d(Function):
     def forward(self, x, kernel_size, stride, padding, pooltype):
+        self.x = x
+        self.pooltype = pooltype
         N, C, H, W = x.shape
         x_pad = np.pad(x.op.arg, padding, mode='constant')
         x_pad = x_pad.reshape(x_pad.shape[2], x_pad.shape[3])
-        out_height = int(((H + 2*padding - kernel_size) // stride + 1))
-        out_width = int(((W + 2*padding - kernel_size) // stride + 1))
-        w_shape = (out_height, out_width, kernel_size, kernel_size)
+        self.out_h = int(((H + 2*padding - kernel_size) // stride + 1))
+        self.out_w = int(((W + 2*padding - kernel_size) // stride + 1))
+        w_shape = (self.out_h, self.out_w, kernel_size, kernel_size)
         stride_w = (stride*x_pad.strides[0], stride*x_pad.strides[1], x_pad.strides[0], x_pad.strides[1])
         x_pad = Buffer.fromCpu(x_pad, device="cpu")
-        out = x_pad.transform_op(TransformOp.Pool2d, (w_shape, stride_w)) # Pool2d is actually just np.as_strided
+        self.out = x_pad.transform_op(TransformOp.Pool2d, (w_shape, stride_w)) 
         if pooltype == "max":
-            return out.max(axis=(2, 3)).reshape(x.shape[0], x.shape[1], out_height, out_width)
+            return self.out.max(axis=(2, 3)).reshape(x.shape[0], x.shape[1], self.out_h, self.out_w)
         if pooltype == "avg":
-            return out.mean(axis=(2, 3)).reshape(x.shape[0], x.shape[1], out_height, out_width)
+            return self.out.mean(axis=(2, 3)).reshape(x.shape[0], x.shape[1], self.out_h, self.out_w)
 
-    def backward(self, dout):
-        pass
+    def vjp(self, dout):
+        print(dout.op)
+        # return dout in places of max values in forward pass
+        # [[1, 1, 2, 4], 
+        #  [5, 6, 7, 8],
+        #  [3, 2, 1, 0],
+        #  [1, 2, 3, 4]]
+        # kernel_size = 2, stride = 1
+        # [[6, 7, 8],
+        #  [6, 7, 8],
+        #  [3, 3, 4]]
+        # Backward pass:
+        # [[0, 0, 0, 0], 
+        #  [0, 2, 2, 2],
+        #  [1, 0, 0, 0],
+        #  [0, 0, 1, 1]]
+        
+        if self.pooltype == "max":
+            print(self.out.max(axis=(2, 3)).reshape(self.x.shape[0], self.x.shape[1], self.out_h, self.out_w)) 
+
 
 class Corr2d(Function):
     def forward(self, x, w, padding, stride):
