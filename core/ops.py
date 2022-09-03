@@ -154,21 +154,18 @@ class Pool2d(Function):
         self.x = x
         self.pooltype = pooltype
         N, C, H, W = x.shape
-        x_pad = np.pad(x.op.arg, padding, mode='constant')
-        x_pad = x_pad.reshape(x_pad.shape[2], x_pad.shape[3])
-        self.out_h = int(((H + 2*padding - kernel_size) // stride + 1))
-        self.out_w = int(((W + 2*padding - kernel_size) // stride + 1))
-        w_shape = (self.out_h, self.out_w, kernel_size, kernel_size)
-        stride_w = (stride*x_pad.strides[0], stride*x_pad.strides[1], x_pad.strides[0], x_pad.strides[1])
-        x_pad = Buffer.fromCpu(x_pad, device="cpu")
-        self.out = x_pad.transform_op(TransformOp.Pool2d, (w_shape, stride_w)) 
-        if pooltype == "max":
-            return self.out.max(axis=(2, 3)).reshape(x.shape[0], x.shape[1], self.out_h, self.out_w)
-        if pooltype == "avg":
-            return self.out.mean(axis=(2, 3)).reshape(x.shape[0], x.shape[1], self.out_h, self.out_w)
+        assert H == W, "pool only works on square tensors"
+        assert kernel_size == stride
+        x_reshape = x.transform_op(TransformOp.Reshape, 
+                    (N, C, H // kernel_size, kernel_size, W // kernel_size, kernel_size))
+        out = x_reshape.reduce_op(ReduceOp.Max, axis=3, keepdims=False)
+        out = Buffer.fromCpu(out, device="cpu")
+        out = out.reduce_op(ReduceOp.Max, axis=4, keepdims=False)
+        out = Buffer.fromCpu(out, device="cpu")
+        out = out.transform_op(TransformOp.Reshape, (N, C, out.shape[-1], out.shape[-2])) 
+        return out
 
     def vjp(self, dout):
-        print(dout.op)
         # return dout in places of max values in forward pass
         # [[1, 1, 2, 4], 
         #  [5, 6, 7, 8],
@@ -178,7 +175,7 @@ class Pool2d(Function):
         # [[6, 7, 8],
         #  [6, 7, 8],
         #  [3, 3, 4]]
-        # Backward pass:
+        # Backward pass, when dout = all 1s:
         # [[0, 0, 0, 0], 
         #  [0, 2, 2, 2],
         #  [1, 0, 0, 0],

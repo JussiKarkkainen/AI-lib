@@ -36,7 +36,7 @@ def eval_load_op(buf:Buffer):
     assert(buf.op.op == LoadOp.fromCpu)
     return Device.buffers[buf.device].fromCpu(buf.op.arg), [], LoadOp
 
-def eval_op_all(parents:Buffer, shape=None):
+def eval_op_all(parents:Buffer, shape=None, keepdims=None):
     real_parents = {x:None for x in parents.op.src}
     for x in real_parents.keys():
         real_parents[x] = x.eval_op(x.device)
@@ -48,7 +48,7 @@ def eval_op_all(parents:Buffer, shape=None):
         if isinstance(x.op, BinaryOp):
             return resolve(x.src[0]).binary_op(x.op, resolve(x.src[1]))
         if isinstance(x.op, ReduceOp):
-            return resolve(x.src[0]).reduce_op(x.op, shape)
+            return resolve(x.src[0]).reduce_op(x.op, shape, keepdims)
         if isinstance(x.op, TensorOp):
             return resolve(x.src[0]).tensor_op(x.op, resolve(x.src[1]))
         if isinstance(x.op, TransformOp):
@@ -80,10 +80,10 @@ class Buffer:
         buf = Buffer(Ops(op, src), UnaryOp, self.device)
         return eval_op_all(buf)[0]
    
-    def reduce_op(self, op, axis):
+    def reduce_op(self, op, axis, keepdims=True):
         src = tuple(self.op if self.op_type == ReduceOp else i for i in tuple([self]))
         buf = Buffer(Ops(op, src), ReduceOp, self.device)
-        return eval_op_all(buf, axis)[0] 
+        return eval_op_all(buf, axis, keepdims)[0] 
 
     def transform_op(self, op, shape, return_buf=False):
         if shape == self.op.arg.shape and (op == TransformOp.Reshape or op == TransformOp.Expand):

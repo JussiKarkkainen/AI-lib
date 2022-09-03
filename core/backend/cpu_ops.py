@@ -18,8 +18,9 @@ class CpuBuffer(np.ndarray):
         return np.divide(x, y)
     def matmul(x, y):
         return np.matmul(x, y)
-    def max(x, *args, **kwargs):
-        return np.max(x, *args, **kwargs)
+    def max(x, axis, keepdims):
+        x = np.asarray(x)
+        return np.max(x, axis=axis, keepdims=keepdims)
     def sum(x, axis, keepdims):
         x = np.asarray(x)
         return np.sum(x, axis=axis, keepdims=keepdims)
@@ -58,11 +59,11 @@ class CpuBuffer(np.ndarray):
         elif op == BinaryOp.Pow:
             return CpuBuffer.power(x, y)
 
-    def reduce_op(x, op, axis):
+    def reduce_op(x, op, axis, keepdims=True):
         if op == ReduceOp.Sum:
-            return CpuBuffer.sum(x, axis, keepdims=True)
+            return CpuBuffer.sum(x, axis, keepdims=keepdims)
         elif op == ReduceOp.Max:
-            return CpuBuffer.max(x, axis, keepdims=True)
+            return CpuBuffer.max(x, axis, keepdims=keepdims)
 
     def transform_op(x, op, arg=None):
         if op == TransformOp.Reshape:
