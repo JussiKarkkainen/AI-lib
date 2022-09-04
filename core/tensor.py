@@ -16,6 +16,8 @@ class Tensor:
             self.data = np.array(data, dtype=np.float32)
         elif isinstance(data, np.ndarray):
             self.data = np.array(data, dtype=np.float32)
+        elif isinstance(data, np.uint8):
+            self.data = np.array(data, dtype=np.float32)
         else:
             raise Exception(f"Unable to make tensor from {type(data)}")
         if isinstance(self.data, np.ndarray):
@@ -27,7 +29,10 @@ class Tensor:
 
     def __repr__(self):
         return f"<Tensor: data={self.data}>"
-        
+    
+    def __getitem__(self, key):
+        return Tensor(self.data[key])
+
     @property
     def dtype(self):
         return np.float32
@@ -123,7 +128,7 @@ class Tensor:
     def conv2d(self, x, padding=0, stride=1):
         # Inputs to Corr2d needs to be of shape: input=DxCxHxW, kernel=NKxCxHKxWK
         self = self._reshape_conv()
-        x = _reshape_conv(x)
+        x = x._reshape_conv()
         return Tensor.Corr2d(self, x, padding=padding, stride=stride)
    
     def sum(self, axis=None):

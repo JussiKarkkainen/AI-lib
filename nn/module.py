@@ -27,5 +27,5 @@ class Module:
     def summarize(self):
         pass
 
-    def __call__(self, *inputs, **kwargs):
-        return self.forward(inputs, kwargs)
+    def __call__(self, *inputs): 
+        return self.forward(*inputs) 
