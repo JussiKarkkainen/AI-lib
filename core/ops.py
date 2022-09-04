@@ -156,34 +156,27 @@ class Pool2d(Function):
         N, C, H, W = x.shape
         assert H == W, "pool only works on square tensors"
         assert kernel_size == stride
-        x_reshape = x.transform_op(TransformOp.Reshape, 
+        self.x_reshape = x.transform_op(TransformOp.Reshape, 
                     (N, C, H // kernel_size, kernel_size, W // kernel_size, kernel_size))
-        out = x_reshape.reduce_op(ReduceOp.Max, axis=3, keepdims=False)
+        out = self.x_reshape.reduce_op(ReduceOp.Max, axis=3, keepdims=False)
         out = Buffer.fromCpu(out, device="cpu")
         out = out.reduce_op(ReduceOp.Max, axis=4, keepdims=False)
         out = Buffer.fromCpu(out, device="cpu")
-        out = out.transform_op(TransformOp.Reshape, (N, C, out.shape[-1], out.shape[-2])) 
-        return out
+        self.out = out.transform_op(TransformOp.Reshape, (N, C, out.shape[-1], out.shape[-2])) 
+        return self.out
 
     def vjp(self, dout):
-        # return dout in places of max values in forward pass
-        # [[1, 1, 2, 4], 
-        #  [5, 6, 7, 8],
-        #  [3, 2, 1, 0],
-        #  [1, 2, 3, 4]]
-        # kernel_size = 2, stride = 1
-        # [[6, 7, 8],
-        #  [6, 7, 8],
-        #  [3, 3, 4]]
-        # Backward pass, when dout = all 1s:
-        # [[0, 0, 0, 0], 
-        #  [0, 2, 2, 2],
-        #  [1, 0, 0, 0],
-        #  [0, 0, 1, 1]]
-        
-        if self.pooltype == "max":
-            print(self.out.max(axis=(2, 3)).reshape(self.x.shape[0], self.x.shape[1], self.out_h, self.out_w)) 
-
+        dx_reshaped = np.zeros_like(self.x_reshape)
+        out_newaxis = self.out[:, :, :, np.newaxis, :, np.newaxis]
+        mask = self.x_reshape == out_newaxis
+        mask = np.array(mask)
+        dout_newaxis = dout.op.arg[:, :, :, np.newaxis, :, np.newaxis]
+        dout_broadcast, _ = np.broadcast_arrays(dout_newaxis.data, dx_reshaped)
+        dout_broadcast = dout_broadcast.astype(np.int32)
+        dx_reshaped[mask] = dout_broadcast[mask]
+        dx_reshaped /= np.sum(mask, axis=(3, 5), keepdims=True)
+        dx = dx_reshaped.reshape(self.x.shape)
+        return dx
 
 class Corr2d(Function):
     def forward(self, x, w, padding, stride):
