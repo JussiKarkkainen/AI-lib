@@ -154,8 +154,9 @@ class Pool2d(Function):
         self.x = x
         self.pooltype = pooltype
         N, C, H, W = x.shape
-        assert H == W, "pool only works on square tensors"
-        assert kernel_size == stride
+        assert kernel_size == stride, "Invalid parameters"
+        assert H % kernel_size == 0
+        assert W % kernel_size == 0 
         self.x_reshape = x.transform_op(TransformOp.Reshape, 
                     (N, C, H // kernel_size, kernel_size, W // kernel_size, kernel_size))
         out = self.x_reshape.reduce_op(ReduceOp.Max, axis=3, keepdims=False)
