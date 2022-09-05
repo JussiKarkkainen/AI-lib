@@ -45,6 +45,15 @@ class Exp(Function):
         x = self.saved_inputs[0]
         return x.unary_op(UnaryOp.Exp).binary_op(BinaryOp.Mul, dout)
 
+class Log(Function):
+    def forward(self, x, y):
+        self.save_for_backward(x)
+        return x.unary_op(BinaryOp.log, y)
+
+    def vjp(self, dout):
+        x = self.saved_inputs[0]
+        return x.binary_op(BinaryOp.Mul, -1.).binary_op(BinaryOp.Mul, dout)
+
 # BinaryOp
 class Add(Function):
     def forward(self, x, y):

@@ -85,6 +85,7 @@ class Tensor:
         x = Tensor.sum(axis=axis, keepdim=keepdim)
         return x * (math.prod(x.shape)/math.prod(self.shape))
 
+
     def flatten(self, start_dim=0, end_dim=-1):
         new_shape = list(self.shape[start_dim:end_dim])
         new_shape.append(self.shape[end_dim])
@@ -95,6 +96,8 @@ class Tensor:
         return Tensor.ReLU(self)
     def exp(self):
         return Tensor.Exp(self)
+    def log(self, x):
+        return Tensor.Log(self, x)
     def add(self, x):
         x = Tensor(x) if not isinstance(x, Tensor) else x
         return Tensor.Add(self, x)

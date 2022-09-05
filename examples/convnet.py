@@ -8,11 +8,7 @@ import matplotlib.pyplot as plt
 
 train_img, train_labels, test_img, test_labels = load_mnist()
 
-'''
-Alexnet, except Average pools are replaced with Max pools
-'''
-
-class AlexNet(Module):
+class ConvNet(Module):
     def __init__(self):
         super().__init__()
         self.conv1 = nn.Conv2d(1, 6, kernel_size=5, padding=2)
@@ -32,7 +28,7 @@ class AlexNet(Module):
         out = self.lin3(h4)
         return out
 
-net = AlexNet()
+net = ConvNet()
 params = net.parameters()
 optim = SGD(params, lr=0.01)
 lossfn = CrossEntropyLoss

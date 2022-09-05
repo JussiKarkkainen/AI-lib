@@ -12,6 +12,8 @@ class CpuBuffer(np.ndarray):
         return np.maximum(x, 0)
     def exp(x):
         return np.exp(x)
+    def log(x):
+        return np.log(x) 
     def power(x, y):
         return np.power(x, y)
     def div(x, y):
@@ -48,6 +50,8 @@ class CpuBuffer(np.ndarray):
             return CpuBuffer.sign(x)
         elif op == UnaryOp.Exp:
             return CpuBuffer.exp(x)
+        elif op == UnaryOp.Log:
+            return CpuBuffer.log(x)
 
     def binary_op(x, op, y):
         if op == BinaryOp.Add:
