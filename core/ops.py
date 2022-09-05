@@ -189,20 +189,21 @@ class Pool2d(Function):
         return dx
 
 class Corr2d(Function):
-    def forward(self, x, w, padding, stride):
+    def forward(self, x, w, b, padding, stride):
         ''' Convolution on inputs with shapes:
         x -> input = DxCxHxW
         w -> kernel = NKxCxHKxWk
         '''
         self.save_for_backward(x, w)
         N, C, H, W = x.shape
+        self.b = b.transform_op(TransformOp.Reshape, (-1, 1))
         self.pad, self.stride = padding, stride
         self.n_K, self.c_K, self.h_K, self.w_K = w.shape
         self.X_cols = im2col_indices(x.op.arg, self.h_K, self.w_K, padding, stride)
         W_cols = w.transform_op(TransformOp.Reshape, (self.n_K, -1))
         out_height = int(((H + 2*padding - self.h_K) / stride + 1))
         out_width = int(((W + 2*padding - self.w_K) / stride + 1))
-        out = W_cols.tensor_op(TensorOp.Matmul, self.X_cols)
+        out = W_cols.tensor_op(TensorOp.Matmul, self.X_cols).binary_op(BinaryOp.Add, self.b)
         out = out.reshape((self.n_K, out_height, out_width, N))
         out = out.transform_op(TransformOp.Permute, (3, 0, 1, 2))
         return out
@@ -216,4 +217,5 @@ class Corr2d(Function):
         w_reshape = w.transform_op(TransformOp.Reshape, (self.n_K, -1))
         x_grad_col = w_reshape.transform_op(TransformOp.Permute, None).tensor_op(TensorOp.Matmul, dout_reshape)
         x_grad = col2im_indices(x_grad_col, x.shape, self.h_K, self.w_K, padding=self.pad, stride=self.stride)
-        return x_grad, w_grad
+        b_grad = dout.unary_op(UnaryOp.Sum, axis=(0, 2, 3))
+        return x_grad, w_grad, b_grad

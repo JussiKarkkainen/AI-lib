@@ -10,7 +10,7 @@ class Linear(Module):
         self.bias = Tensor.zeros(out_features) if bias else None
         
     def forward(self, x):
-        return x.matmul(self.weight) + self.bias
+        return x.matmul(self.weights) + self.bias
 
 class Conv2d(Module):
     def __init__(self, in_channels, out_channels, kernel_size, stride=1, padding=0, bias=True):
@@ -20,12 +20,11 @@ class Conv2d(Module):
         self.kernel_size = kernel_size
         self.stride = stride
         self.padding = padding
-        self.weights = Tensor.randn(kernel_size, kernel_size)
-        self.bias = Tensor.zeros((self.out_channels, 1)) if bias else None 
-
+        self.weights = Tensor.randn(out_channels, in_channels, kernel_size, kernel_size)
+        self.bias = Tensor.zeros(self.out_channels) if bias else None 
+    
     def forward(self, x):
-        out = x.conv2d(self.weights, padding=self.padding, stride=self.stride) 
-        return out + self.bias
+        return x.conv2d(self.weights, self.bias, padding=self.padding, stride=self.stride)
 
 class MaxPool2d(Module):
     def __init__(self, kernel_size=2, stride=2):

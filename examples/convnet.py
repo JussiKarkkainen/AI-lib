@@ -1,4 +1,5 @@
 from core.tensor import Tensor
+from core.autograd import grad
 from nn.module import Module
 import nn.layer as nn
 from dataset.loader import load_mnist

@@ -128,11 +128,11 @@ class Tensor:
         return Tensor.Pool2d(self, kernel_size=kernel_size, stride=stride, padding=padding, pooltype="avg")
     '''
     
-    def conv2d(self, x, padding=0, stride=1):
+    def conv2d(self, w, b, padding=0, stride=1):
         # Inputs to Corr2d needs to be of shape: input=DxCxHxW, kernel=NKxCxHKxWK
         self = self._reshape_conv()
-        x = x._reshape_conv()
-        return Tensor.Corr2d(self, x, padding=padding, stride=stride)
+        w = w._reshape_conv()
+        return Tensor.Corr2d(self, w, b, padding=padding, stride=stride)
    
     def sum(self, axis=None):
         dims = range(len(self.shape)) if axis == None else axis
