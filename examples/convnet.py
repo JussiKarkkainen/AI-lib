@@ -4,7 +4,7 @@ from nn.module import Module
 import nn.layer as nn
 from dataset.loader import load_mnist
 from core.optim import SGD
-from nn.loss import CrossEntropyLoss
+from nn.loss import sparse_cross_entropy
 import matplotlib.pyplot as plt
 
 train_img, train_labels, test_img, test_labels = load_mnist()
@@ -32,7 +32,7 @@ class ConvNet(Module):
 net = ConvNet()
 params = net.parameters()
 optim = SGD(params, lr=0.01)
-lossfn = CrossEntropyLoss
+lossfn = sparse_cross_entropy 
 num_epochs = 10
 
 for epoch in range(num_epochs):

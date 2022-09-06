@@ -15,7 +15,7 @@ def MSEloss(y_hat, y, reduction="mean"):
         return MSEloss.mean()
 
 
-def CrossEntropyLoss(y_hat, y, reduction="mean"):
+def sparse_cross_entropy(y_hat, y, reduction="mean"):
     out = -Tensor.log(y_hat[range(len(y_hat)), y])
     if reduction == "none":
         return out
