@@ -1,3 +1,5 @@
+from core.tensor import Tensor
+
 class Optim:
     def __init__(self, params):
         self.params = params
@@ -12,13 +14,13 @@ class SGD(Optim):
         self.momentum = momentum
         self.weight_decay = weight_decay
         
-        self.velocity = []
-        for param in params:
-            self.velocity.append(np.zeros_like(param.grad))
 
     def step(self, params, grads):
+        velocity = []
+        for grad in grads:
+            velocity.append(Tensor.zeros(grad.shape))
         for param, v, grad in zip(params, self.velocity, grads):
-            v = self.momentum * self.velocity + param.grad + self.weight_decay * grad
+            v = self.momentum * self.velocity + self.weight_decay * grad
             param -= self.lr * v
         return params
 

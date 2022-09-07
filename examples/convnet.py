@@ -1,3 +1,4 @@
+import numpy as np
 from core.tensor import Tensor
 from core.autograd import grad
 from nn.module import Module
@@ -6,8 +7,27 @@ from dataset.loader import load_mnist
 from core.optim import SGD
 from nn.loss import sparse_cross_entropy
 import matplotlib.pyplot as plt
+import torch
+from torchvision import datasets, transforms
 
-train_img, train_labels, test_img, test_labels = load_mnist()
+transform = transforms.Compose(
+    [transforms.ToTensor()])
+
+batch_size = 128
+
+trainset = datasets.MNIST(root='./data', train=True,
+                                        download=True, transform=transform)
+trainloader = torch.utils.data.DataLoader(trainset, batch_size=batch_size,
+                                          shuffle=True, num_workers=2)
+
+testset = datasets.MNIST(root='./data', train=False,
+                                       download=True, transform=transform)
+testloader = torch.utils.data.DataLoader(testset, batch_size=batch_size,
+                                         shuffle=False, num_workers=2)
+
+
+train_images = Tensor(np.array(trainset.train_data).astype(np.float32))
+train_labels = Tensor(np.array(testset.test_labels).astype(np.float32))
 
 class ConvNet(Module):
     def __init__(self):
@@ -36,7 +56,7 @@ lossfn = sparse_cross_entropy
 num_epochs = 10
 
 for epoch in range(num_epochs):
-    for X, y in zip(train_img, train_labels):
+    for X, y in zip(train_images, train_labels):
         y_hat = net(X)
         grads = grad(lossfn, 0)(params, X, y)
         params = optim.step(params, grads) 

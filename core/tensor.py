@@ -18,6 +18,8 @@ class Tensor:
             self.data = np.array(data, dtype=np.float32)
         elif isinstance(data, np.uint8):
             self.data = np.array(data, dtype=np.float32)
+        elif isinstance(data, np.float32):
+            self.data = np.array(data, dtype=np.float32)
         else:
             raise Exception(f"Unable to make tensor from {type(data)}")
         if isinstance(self.data, np.ndarray):
