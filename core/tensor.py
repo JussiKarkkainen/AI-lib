@@ -86,7 +86,8 @@ class Tensor:
     def mean(self, axis, keepdim=False):
         x = Tensor.sum(axis=axis, keepdim=keepdim)
         return x * (math.prod(x.shape)/math.prod(self.shape))
-
+    def softmax(self):
+        pass
 
     def flatten(self, start_dim=0, end_dim=-1):
         new_shape = list(self.shape[start_dim:end_dim])

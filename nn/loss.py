@@ -15,14 +15,22 @@ def MSEloss(y_hat, y, reduction="mean"):
         return MSEloss.mean()
 
 
-def sparse_cross_entropy(y_hat, y, reduction="mean"):
-    out = -Tensor.log(y_hat[range(len(y_hat)), y])
-    if reduction == "none":
-        return out
-    if reduction == "mean":
-        return out.mean()
-    elif reduction == "sum":
-        return out.sum()
+class CrossEntropyLoss:
+    
+    # Input needs to be a tensor of shape (minibatch, C), C = number of classes or
+    # (minibatch, C, d1, d2, d3 ..., dk) with k >= 1 for computing
+    # loss per pixel for 2d images
+
+    # Target 
+
+    def __call__(self, y_hat, y, reduction="mean"):
+        out = -Tensor.log(Tensor.exp(y_hat) / 
+        if reduction == "none":
+            return out
+        if reduction == "mean":
+            return out.mean()
+        elif reduction == "sum":
+            return out.sum()
 
 
 
