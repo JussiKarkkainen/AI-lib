@@ -2,17 +2,19 @@ import warnings
 import numpy as np
 from core.tensor import Tensor
 
-def MSEloss(y_hat, y, reduction="mean"):
-    if y.size() != y_hat.size():
-        warnings.warn("input tensor and target tensor are of different sizes")
+class MSELoss:
+    
+    def __call__(self, y_hat, y, reduction="mean"):
+        if y.size() != y_hat.size():
+            warnings.warn("input tensor and target tensor are of different sizes")
 
-    MSEloss = 0.5*(y_hat - y)**2
-    if reduction == "none":
-        return MSEloss
-    elif reduction == "mean":
-        return MSEloss.sum()
-    elif reduction == "sum":
-        return MSEloss.mean()
+        out = 0.5*(y_hat - y)**2
+        if reduction == "none":
+            return out
+        elif reduction == "mean":
+            return out.sum()
+        elif reduction == "sum":
+            return out.mean()
 
 
 class CrossEntropyLoss:
@@ -24,11 +26,12 @@ class CrossEntropyLoss:
     # Target 
 
     def __call__(self, y_hat, y, reduction="mean"):
-        out = -Tensor.log(Tensor.exp(y_hat) / 
+        # out = -Tensor.sum([Tensor.log()
+        out = Tensor([1, 2, 3])
         if reduction == "none":
             return out
         if reduction == "mean":
-            return out.mean()
+            return out.mean(axis=1)
         elif reduction == "sum":
             return out.sum()
 

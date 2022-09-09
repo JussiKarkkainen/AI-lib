@@ -100,9 +100,9 @@ class Pow(Function):
 
 #ReduceOp
 class Sum(Function):
-    def forward(self, x, axis=None):
+    def forward(self, x, keepdims, axis=None):
         self.shape = x.op.arg.shape 
-        return x.reduce_op(ReduceOp.Sum, axis)
+        return x.reduce_op(ReduceOp.Sum, axis, keepdims)
     
     def vjp(self, dout):
         return dout.transform_op(TransformOp.Expand, self.shape)

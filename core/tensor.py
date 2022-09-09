@@ -84,7 +84,7 @@ class Tensor:
     def sqrt(self):
         return self.pow(0.5)
     def mean(self, axis, keepdim=False):
-        x = Tensor.sum(axis=axis, keepdim=keepdim)
+        x = Tensor.sum(self, axis=axis, keepdims=keepdim)
         return x * (math.prod(x.shape)/math.prod(self.shape))
     def softmax(self):
         pass
@@ -137,10 +137,10 @@ class Tensor:
         w = w._reshape_conv()
         return Tensor.Corr2d(self, w, b, padding=padding, stride=stride)
    
-    def sum(self, axis=None):
+    def sum(self, axis=None, keepdims=False):
         dims = range(len(self.shape)) if axis == None else axis
         dims = tuple([x if x >= 0 else x+len(self.shape) for x in dims])
-        out = Tensor.Sum(self, axis=dims)
+        out = Tensor.Sum(self, axis, keepdims)
         return out
 
     def reshape(self, shape):
