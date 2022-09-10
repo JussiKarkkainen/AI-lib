@@ -3,18 +3,17 @@ import numpy as np
 from core.tensor import Tensor
 
 class MSELoss:
-    
-    def __call__(self, y_hat, y, reduction="mean"):
-        if y.size() != y_hat.size():
-            warnings.warn("input tensor and target tensor are of different sizes")
+    def __init__(self, reduction="sum"):
+        self.reduction = reduction
 
-        out = 0.5*(y_hat - y)**2
-        if reduction == "none":
+    def __call__(self, y_hat, y): 
+        out = (y_hat - y)**2
+        if self.reduction == "none":
             return out
-        elif reduction == "mean":
-            return out.sum()
-        elif reduction == "sum":
+        elif self.reduction == "mean":
             return out.mean()
+        elif self.reduction == "sum":
+            return out.sum()
 
 
 class CrossEntropyLoss:
@@ -31,7 +30,7 @@ class CrossEntropyLoss:
         if reduction == "none":
             return out
         if reduction == "mean":
-            return out.mean(axis=1)
+            return out.mean()
         elif reduction == "sum":
             return out.sum()
 
