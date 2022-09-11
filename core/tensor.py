@@ -30,7 +30,7 @@ class Tensor:
         self._graph = None 
 
     def __repr__(self):
-        return f"<Tensor: shape={self.shape}>"
+        return f"<Tensor: {self.data} shape: {self.shape}>"
     
     def __getitem__(self, key):
         return Tensor(self.data[key])
@@ -86,8 +86,12 @@ class Tensor:
     def mean(self, axis=None, keepdim=False):
         x = Tensor.sum(self, axis=axis, keepdims=keepdim)
         return x * (math.prod(x.shape)/math.prod(self.shape))
-    def softmax(self):
-        pass
+    def softmax(self, dim=0):
+        exp = [x.exp() for x in Tensor(self)]
+        x = [np.array(x.data).astype(np.float32) for x in exp]
+        s = Tensor(x).sum()
+        out = [exp[i] / s for i in range(len(exp))]
+        return out
 
     def flatten(self, start_dim=0, end_dim=-1):
         new_shape = list(self.shape[start_dim:end_dim])

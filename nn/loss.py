@@ -17,21 +17,16 @@ class MSELoss:
 
 
 class CrossEntropyLoss:
-    
-    # Input needs to be a tensor of shape (minibatch, C), C = number of classes or
-    # (minibatch, C, d1, d2, d3 ..., dk) with k >= 1 for computing
-    # loss per pixel for 2d images
+    def __init__(self, reduction="mean"):    
+        self.reduction = reduction
 
-    # Target 
-
-    def __call__(self, y_hat, y, reduction="mean"):
-        # out = -Tensor.sum([Tensor.log()
+    def __call__(self, y_hat, y):
         out = Tensor([1, 2, 3])
-        if reduction == "none":
+        if self.reduction == "none":
             return out
-        if reduction == "mean":
+        if self.reduction == "mean":
             return out.mean()
-        elif reduction == "sum":
+        elif self.reduction == "sum":
             return out.sum()
 
 
