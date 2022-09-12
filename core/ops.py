@@ -46,9 +46,9 @@ class Exp(Function):
         return x.unary_op(UnaryOp.Exp).binary_op(BinaryOp.Mul, dout)
 
 class Log(Function):
-    def forward(self, x, y):
+    def forward(self, x):
         self.save_for_backward(x)
-        return x.unary_op(BinaryOp.log, y)
+        return x.unary_op(UnaryOp.Log)
 
     def vjp(self, dout):
         x = self.saved_inputs[0]

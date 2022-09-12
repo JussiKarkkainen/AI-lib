@@ -87,11 +87,10 @@ class Tensor:
         x = Tensor.sum(self, axis=axis, keepdims=keepdim)
         return x * (math.prod(x.shape)/math.prod(self.shape))
     def softmax(self, dim=0):
-        exp = [x.exp() for x in Tensor(self)]
-        x = [np.array(x.data).astype(np.float32) for x in exp]
-        s = Tensor(x).sum()
-        out = [exp[i] / s for i in range(len(exp))]
+        out = self.exp() / self.exp().sum() 
         return out
+    def logsoftmax(self):
+        return self.softmax().log()
 
     def flatten(self, start_dim=0, end_dim=-1):
         new_shape = list(self.shape[start_dim:end_dim])
@@ -103,8 +102,8 @@ class Tensor:
         return Tensor.ReLU(self)
     def exp(self):
         return Tensor.Exp(self)
-    def log(self, x):
-        return Tensor.Log(self, x)
+    def log(self):
+        return Tensor.Log(self)
     def add(self, x):
         x = Tensor(x) if not isinstance(x, Tensor) else x
         return Tensor.Add(self, x)
