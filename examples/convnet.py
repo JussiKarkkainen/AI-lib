@@ -1,11 +1,11 @@
 import numpy as np
 from core.tensor import Tensor
 from core.autograd import grad
-from nn.module import Module
-import nn.layer as nn
+from core.nn.module import Module
+import core.nn.layer as nn
 from dataset.loader import load_mnist
 from core.optim import SGD
-from nn.loss import sparse_cross_entropy
+from core.nn.loss import CrossEntropyLoss
 import matplotlib.pyplot as plt
 import torch
 from torchvision import datasets, transforms
@@ -40,25 +40,36 @@ class ConvNet(Module):
         self.lin2 = nn.Linear(120, 84)
         self.lin3 = nn.Linear(84, 10)
 
-    def forward(self, x):
+    def forward(self, params, x):
+        out = params 
+        '''
         h1 = self.maxpool1(self.conv1(x)).sigmoid()
         h2 = self.maxpool2(self.conv2(h1)).sigmoid()
         h2 = h2.flatten()
         h3 = self.lin1(h2).sigmoid()
         h4 = self.lin2(h3).sigmoid()
         out = self.lin3(h4)
+        '''
         return out
 
 net = ConvNet()
 params = net.parameters()
 optim = SGD(params, lr=0.01)
-lossfn = sparse_cross_entropy 
+lossfn = CrossEntropyLoss() 
 num_epochs = 10
+
+def loss(params, X, y):
+    y_hat = net(params, X)
+    out = lossfn(y_hat, y)
+    return out
+
+# Look at this: 
+# https://github.com/huggingface/transformers/blob/main/examples/flax/vision/run_image_classification.py 
 
 for epoch in range(num_epochs):
     for X, y in zip(train_images, train_labels):
         y_hat = net(X)
-        grads = grad(lossfn, 0)(params, X, y)
+        grads = grad(loss, 0)(params, X, y)
         params = optim.step(params, grads) 
 
     loss = lossfn(net(X), y)

@@ -23,7 +23,6 @@ class CrossEntropyLoss:
     def __call__(self, y_hat, y):
         logprobs = y_hat.logsoftmax()
         out = -1 * (logprobs[range(y.shape[0]), y.data])
-
         if self.reduction == "none":
             return out
         if self.reduction == "mean":

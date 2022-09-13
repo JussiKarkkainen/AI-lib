@@ -1,5 +1,5 @@
 from core.tensor import Tensor
-from nn.module import Module
+from core.nn.module import Module
 
 class Linear(Module):
     def __init__(self, in_features, out_features, bias=True):
