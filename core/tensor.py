@@ -87,7 +87,7 @@ class Tensor:
         x = Tensor.sum(self, axis=axis, keepdims=keepdim)
         return x * (math.prod(x.shape)/math.prod(self.shape))
     def softmax(self, dim=0):
-        out = self.exp() / self.exp().sum() 
+        out = self.exp() / self.exp().sum(axis=1, keepdims=True) 
         return out
     def logsoftmax(self):
         return self.softmax().log()
@@ -141,7 +141,7 @@ class Tensor:
         return Tensor.Corr2d(self, w, b, padding=padding, stride=stride)
    
     def sum(self, axis=None, keepdims=False):
-        dims = range(len(self.shape) + 1) if axis == None else axis
+        dims = range(len(self.shape) + 1) if axis == None else [axis]
         dims = tuple([x if x >= 0 else x+len(self.shape) for x in list(dims)])
         out = Tensor.Sum(self, axis=axis, keepdims=keepdims)
         return out

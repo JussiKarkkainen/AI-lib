@@ -21,7 +21,9 @@ class CrossEntropyLoss:
         self.reduction = reduction
 
     def __call__(self, y_hat, y):
-        out = Tensor([1, 2, 3])
+        logprobs = y_hat.logsoftmax()
+        out = -1 * (logprobs[range(y.shape[0]), y.data])
+
         if self.reduction == "none":
             return out
         if self.reduction == "mean":
