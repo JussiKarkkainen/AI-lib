@@ -29,6 +29,7 @@ testloader = torch.utils.data.DataLoader(testset, batch_size=batch_size,
 train_images = Tensor(np.array(trainset.train_data).astype(np.float32))
 train_labels = Tensor(np.array(testset.test_labels).astype(np.float32))
 
+
 class ConvNet(Module):
     def __init__(self):
         super().__init__()
@@ -40,18 +41,27 @@ class ConvNet(Module):
         self.lin2 = nn.Linear(120, 84)
         self.lin3 = nn.Linear(84, 10)
 
-    def forward(self, params, x):
+    def forward(self, x):
         out = params 
-        '''
         h1 = self.maxpool1(self.conv1(x)).sigmoid()
         h2 = self.maxpool2(self.conv2(h1)).sigmoid()
         h2 = h2.flatten()
         h3 = self.lin1(h2).sigmoid()
         h4 = self.lin2(h3).sigmoid()
         out = self.lin3(h4)
-        '''
         return out
-
+'''
+class ConvNet(nn.Module):
+    def forward(self, x):
+        x = nn.Conv2d(1, 6, kernel_size=5, padding=2)(x).relu()
+        x = nn.MaxPool2d(kernel_size=2, stride=2)(x)
+        x = nn.Conv2d(6, 16, kernel_size=5)(x).relu()
+        x = nn.MaxPool2d(kernel_size=2, stride=2)(x).flatten()
+        x = nn.Linear(400, 120)(x).relu()
+        x = nn.Linear(120, 84)(x).relu()
+        x = nn.Linear(84, 10)(x)
+        return x
+'''
 net = ConvNet()
 params = net.parameters()
 optim = SGD(params, lr=0.01)
@@ -59,16 +69,15 @@ lossfn = CrossEntropyLoss()
 num_epochs = 10
 
 def loss(params, X, y):
-    y_hat = net(params, X)
+    y_hat = net(X)
     out = lossfn(y_hat, y)
     return out
 
-# Look at this: 
-# https://github.com/huggingface/transformers/blob/main/examples/flax/vision/run_image_classification.py 
+# state = TrainState.create(apply_fn=net.forward(), params=net.parameters, tx=adamw)
 
 for epoch in range(num_epochs):
     for X, y in zip(train_images, train_labels):
-        y_hat = net(X)
+        # need to one-hot labels
         grads = grad(loss, 0)(params, X, y)
         params = optim.step(params, grads) 
 

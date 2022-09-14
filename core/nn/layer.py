@@ -8,7 +8,7 @@ class Linear(Module):
         self.out_features = out_features
         self.weights = Tensor.randn(in_features, out_features)
         self.bias = Tensor.zeros(out_features) if bias else None
-        self._parameters = self.add_params(("Lin, weight:", "Lin, bias:"), (self.weights, self.bias))
+        self._parameters = self.add_params((self.weights, self.bias))
         
     def forward(self, x):
         return x.matmul(self.weights) + self.bias
@@ -23,7 +23,7 @@ class Conv2d(Module):
         self.padding = padding
         self.weights = Tensor.randn(out_channels, in_channels, kernel_size, kernel_size)
         self.bias = Tensor.zeros(self.out_channels) if bias else None 
-        self._parameters = self.add_params(("Conv2d, weight:", "Conv2d, bias:"), (self.weights, self.bias))
+        self._parameters = self.add_params((self.weights, self.bias))
 
     def forward(self, x):
         return x.conv2d(self.weights, self.bias, padding=self.padding, stride=self.stride)
