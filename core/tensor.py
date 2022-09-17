@@ -86,17 +86,18 @@ class Tensor:
     def mean(self, axis=None, keepdim=False):
         x = Tensor.sum(self, axis=axis, keepdims=keepdim)
         return x * (math.prod(x.shape)/math.prod(self.shape))
-    def softmax(self, dim=0):
-        out = self.exp() / self.exp().sum(axis=dim, keepdims=True) 
-        return out
+    def softmax(self, dim=1):
+        f = Tensor.exp(self - Tensor.max(self))
+        out = f / f.sum(axis=dim, keepdims=True)
+        return f / f.sum(axis=dim, keepdims=True) 
     def logsoftmax(self):
         return self.softmax().log()
 
     def flatten(self, start_dim=0, end_dim=-1):
-        new_shape = list(self.shape[start_dim:end_dim])
-        new_shape.append(self.shape[end_dim])
-        new_shape = (functools.reduce(lambda x, y : x*y, new_shape),)
-        return Tensor.reshape(self, new_shape)
+        flat_axis = list(self.shape[start_dim:end_dim])
+        flat_axis.append(self.shape[end_dim])
+        flat_shape = (functools.reduce(lambda x, y : x*y, flat_axis))
+        return Tensor.reshape(self, (self.shape[0], flat_shape))
     
     def relu(self):
         return Tensor.ReLU(self)
@@ -104,6 +105,8 @@ class Tensor:
         return Tensor.Exp(self)
     def log(self):
         return Tensor.Log(self)
+    def max(self, axis=None, keepdims=False):
+        return Tensor.Max(self, axis=axis, keepdims=keepdims)
     def add(self, x):
         x = Tensor(x) if not isinstance(x, Tensor) else x
         return Tensor.Add(self, x)

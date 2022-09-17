@@ -1,4 +1,5 @@
 import numpy as np
+from core.nn.utils import one_hot
 from core.tensor import Tensor
 from core.autograd import grad
 from core.nn.module import Module
@@ -13,7 +14,7 @@ from torchvision import datasets, transforms
 transform = transforms.Compose(
     [transforms.ToTensor()])
 
-batch_size = 128
+batch_size = 256
 
 trainset = datasets.MNIST(root='./data', train=True,
                                         download=True, transform=transform)
@@ -24,11 +25,6 @@ testset = datasets.MNIST(root='./data', train=False,
                                        download=True, transform=transform)
 testloader = torch.utils.data.DataLoader(testset, batch_size=batch_size,
                                          shuffle=False, num_workers=2)
-
-
-train_images = Tensor(np.array(trainset.train_data).astype(np.float32))
-train_labels = Tensor(np.array(testset.test_labels).astype(np.float32))
-
 
 class ConvNet(Module):
     def __init__(self):
@@ -43,25 +39,14 @@ class ConvNet(Module):
 
     def forward(self, x):
         out = params 
-        h1 = self.maxpool1(self.conv1(x)).sigmoid()
-        h2 = self.maxpool2(self.conv2(h1)).sigmoid()
-        h2 = h2.flatten()
-        h3 = self.lin1(h2).sigmoid()
-        h4 = self.lin2(h3).sigmoid()
+        h1 = self.maxpool1(self.conv1(x)).relu()
+        h2 = self.maxpool2(self.conv2(h1)).relu()
+        h2 = h2.flatten(start_dim=1)
+        h3 = self.lin1(h2).relu()
+        h4 = self.lin2(h3).relu()
         out = self.lin3(h4)
         return out
-'''
-class ConvNet(nn.Module):
-    def forward(self, x):
-        x = nn.Conv2d(1, 6, kernel_size=5, padding=2)(x).relu()
-        x = nn.MaxPool2d(kernel_size=2, stride=2)(x)
-        x = nn.Conv2d(6, 16, kernel_size=5)(x).relu()
-        x = nn.MaxPool2d(kernel_size=2, stride=2)(x).flatten()
-        x = nn.Linear(400, 120)(x).relu()
-        x = nn.Linear(120, 84)(x).relu()
-        x = nn.Linear(84, 10)(x)
-        return x
-'''
+
 net = ConvNet()
 params = net.parameters()
 optim = SGD(params, lr=0.01)
@@ -73,11 +58,10 @@ def loss(params, X, y):
     out = lossfn(y_hat, y)
     return out
 
-# state = TrainState.create(apply_fn=net.forward(), params=net.parameters, tx=adamw)
-
 for epoch in range(num_epochs):
-    for X, y in zip(train_images, train_labels):
-        # need to one-hot labels
+    for X, y in trainloader:
+        X = Tensor(np.array(X))
+        y = Tensor(np.array(y))
         grads = grad(loss, 0)(params, X, y)
         params = optim.step(params, grads) 
 

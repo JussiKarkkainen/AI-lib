@@ -108,8 +108,8 @@ class Sum(Function):
         return dout.transform_op(TransformOp.Expand, self.shape)
 
 class Max(Function):
-    def forward(self, x, axis=None):
-        out = x.reduce_op(ReduceOp.Max)
+    def forward(self, x, axis=None, keepdims=False):
+        out = x.reduce_op(ReduceOp.Max, axis=axis)
         self.save_for_backward(x, out)
         return out
 

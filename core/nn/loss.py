@@ -15,23 +15,18 @@ class MSELoss:
         elif self.reduction == "sum":
             return out.sum()
 
-
 class CrossEntropyLoss:
     def __init__(self, reduction="mean"):    
         self.reduction = reduction
 
     def __call__(self, y_hat, y):
         logprobs = y_hat.logsoftmax()
-        out = -1 * (logprobs[range(y.shape[0]), y.data])
+        labels = np.array(y.data).astype(np.int32)
+        out = -1 * (logprobs[range(y.shape[0]), labels])
         if self.reduction == "none":
             return out
         if self.reduction == "mean":
             return out.mean()
         elif self.reduction == "sum":
             return out.sum()
-
-
-
-
-
 
