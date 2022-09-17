@@ -87,12 +87,15 @@ class Tensor:
         x = Tensor.sum(self, axis=axis, keepdims=keepdim)
         return x * (math.prod(x.shape)/math.prod(self.shape))
     def softmax(self, dim=1):
-        f = Tensor.exp(self - Tensor.max(self))
-        out = f / f.sum(axis=dim, keepdims=True)
-        return f / f.sum(axis=dim, keepdims=True) 
+        f = self - self.max(axis=len(self.shape)-1, keepdims=True)
+        e = f.exp()
+        return e / e.sum(axis=len(self.shape)-1, keepdims=True)
     def logsoftmax(self):
-        return self.softmax().log()
-
+        f = self - self.max(axis=len(self.shape)-1, keepdims=True)
+        e = f.exp()
+        s = e.sum(axis=len(self.shape)-1, keepdims=True)
+        return f - s.log()
+    
     def flatten(self, start_dim=0, end_dim=-1):
         flat_axis = list(self.shape[start_dim:end_dim])
         flat_axis.append(self.shape[end_dim])
