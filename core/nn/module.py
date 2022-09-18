@@ -1,22 +1,6 @@
 from collections import OrderedDict
 
 
-
-class TrainState:
-    _params = OrderedDict()
-
-    @classmethod
-    def create(cls, *, apply_fn, params, tx, **kwargs):
-        return cls(
-            step=0,
-            apply_fn=apply_fn,
-            params=params,
-            tx=tx,
-            opt_state=opt_state,
-            **kwargs,
-        )
-
-
 # Base class for all models
 class Module:
     
@@ -31,9 +15,8 @@ class Module:
         raise NotImplementedError
    
     def parameters(self, recurse=True):
-        for param in self._parameters:
-            yield param
-    
+        return self._parameters
+
     def modules(self):
         for _, module in self.modules:
             yield module

@@ -117,6 +117,8 @@ class Max(Function):
         x, out = self.saved_inputs
         out_reshape = out.transform_op(TransformOp.Expand, x.shape)
         # return 1 in the location of the maximum value * dout, 0 otherwise         
+        print("max not vjp not implemented")
+        return None
 
 #TransformOp
 class Reshape(Function):

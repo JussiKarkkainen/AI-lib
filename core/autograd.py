@@ -45,7 +45,7 @@ def make_vjp(func, x):
     Construct function for vector-Jacobian product
     '''
     end_value = func(*x)
-    if (end_value.shape[-1], end_value.shape[-2]) != (1,1):
+    if end_value.shape != (): 
         raise TypeError("Grad only works with scalar output functions")
     def vjp(g): 
         return backward(g, end_value)

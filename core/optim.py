@@ -8,20 +8,22 @@ class Optim:
         raise NotImplementedError
 
 class SGD(Optim):
-    def __init__(self, params, lr, momentum=0.0, weight_decay=0.0):
+    def __init__(self, params, lr):
         super().__init__(params)
         self.lr = lr
-        self.momentum = momentum
-        self.weight_decay = weight_decay
+        #self.momentum = momentum
+        #self.weight_decay = weight_decay
         
 
     def step(self, params, grads):
+        '''
         velocity = []
         for grad in grads:
             velocity.append(Tensor.zeros(grad.shape))
-        for param, v, grad in zip(params, self.velocity, grads):
-            v = self.momentum * self.velocity + self.weight_decay * grad
-            param -= self.lr * v
+        '''
+        for param, grad in zip(params, grads):
+            #v = self.momentum * vel + self.weight_decay * grad
+            param -= self.lr * grad
         return params
 
 class RMSprop(Optim):

@@ -1,9 +1,11 @@
+# These imports are a mess, should fix them
 import numpy as np
 from core.nn.utils import one_hot
 from core.tensor import Tensor
 from core.autograd import grad
 from core.nn.module import Module
 import core.nn.layer as nn
+from core.nn.transform import transform
 from dataset.loader import load_mnist
 from core.optim import SGD
 from core.nn.loss import CrossEntropyLoss
@@ -48,7 +50,6 @@ class ConvNet(Module):
         return out
 
 net = ConvNet()
-params = net.parameters()
 optim = SGD(params, lr=0.01)
 lossfn = CrossEntropyLoss() 
 num_epochs = 10
@@ -58,12 +59,17 @@ def loss(params, X, y):
     out = lossfn(y_hat, y)
     return out
 
+loss_fn_t = transform(loss)
+x_init, y_init = Tensor(np.array(next(trainloader)))
+params = loss_fn_t.init(x_init, y_init)
+
 for epoch in range(num_epochs):
     for X, y in trainloader:
         X = Tensor(np.array(X))
         y = Tensor(np.array(y))
-        grads = grad(loss, 0)(params, X, y)
+        grads = grad(loss_fn_t.apply)(params, X, y)
         params = optim.step(params, grads) 
 
+    # Shoudn't use two forward passes, way too slow
     loss = lossfn(net(X), y)
     print(f"loss on epoch: {epoch} is {loss}")
