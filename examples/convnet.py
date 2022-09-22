@@ -13,20 +13,22 @@ import matplotlib.pyplot as plt
 import torch
 from torchvision import datasets, transforms
 
-transform = transforms.Compose(
+transformn = transforms.Compose(
     [transforms.ToTensor()])
 
 batch_size = 256
 
 trainset = datasets.MNIST(root='./data', train=True,
-                                        download=True, transform=transform)
+                                        download=True, transform=transformn)
 trainloader = torch.utils.data.DataLoader(trainset, batch_size=batch_size,
                                           shuffle=True, num_workers=2)
 
 testset = datasets.MNIST(root='./data', train=False,
-                                       download=True, transform=transform)
+                                       download=True, transform=transformn)
 testloader = torch.utils.data.DataLoader(testset, batch_size=batch_size,
                                          shuffle=False, num_workers=2)
+
+train_loader = iter(trainloader)
 
 class ConvNet(Module):
     def __init__(self):
@@ -50,7 +52,6 @@ class ConvNet(Module):
         return out
 
 net = ConvNet()
-optim = SGD(params, lr=0.01)
 lossfn = CrossEntropyLoss() 
 num_epochs = 10
 
@@ -60,8 +61,10 @@ def loss(params, X, y):
     return out
 
 loss_fn_t = transform(loss)
-x_init, y_init = Tensor(np.array(next(trainloader)))
+x_init, y_init = next(train_loader)
+x_init, y_init = Tensor(np.array(x_init)), Tensor(np.array(y_init))
 params = loss_fn_t.init(x_init, y_init)
+optim = SGD(params, lr=0.01)
 
 for epoch in range(num_epochs):
     for X, y in trainloader:
