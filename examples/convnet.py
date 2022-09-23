@@ -1,14 +1,10 @@
-# These imports are a mess, should fix them
 import numpy as np
 from core.nn.utils import one_hot
 from core.tensor import Tensor
 from core.autograd import grad
-from core.nn.module import Module
-import core.nn.layer as nn
-from core.nn.transform import transform
-from dataset.loader import load_mnist
-from core.optim import SGD
-from core.nn.loss import CrossEntropyLoss
+import core.nn as nn
+from core.transform import transform
+from core.nn.optim import SGD
 import matplotlib.pyplot as plt
 import torch
 from torchvision import datasets, transforms
@@ -30,7 +26,7 @@ testloader = torch.utils.data.DataLoader(testset, batch_size=batch_size,
 
 train_loader = iter(trainloader)
 
-class ConvNet(Module):
+class ConvNet(nn.Module):
     def __init__(self):
         super().__init__()
         self.conv1 = nn.Conv2d(1, 6, kernel_size=5, padding=2)
@@ -51,7 +47,7 @@ class ConvNet(Module):
         return out
 
 net = ConvNet()
-lossfn = CrossEntropyLoss() 
+lossfn = nn.CrossEntropyLoss() 
 num_epochs = 10
 
 def loss(X, y):
@@ -65,6 +61,7 @@ x_init, y_init = Tensor(np.array(x_init)), Tensor(np.array(y_init))
 params = loss_fn_t.init(x_init, y_init)
 optim = SGD(params, lr=0.01)
 
+print("starting training")
 for epoch in range(num_epochs):
     for X, y in trainloader:
         X = Tensor(np.array(X))
@@ -74,4 +71,4 @@ for epoch in range(num_epochs):
 
     # Shoudn't use two forward passes, way too slow
     loss = lossfn(net(X), y)
-    print(f"loss on epoch: {epoch} is {loss}")
+    print(f"loss on epoch: {epoch} is {loss.data}")
