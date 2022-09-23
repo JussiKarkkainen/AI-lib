@@ -42,7 +42,6 @@ class ConvNet(Module):
         self.lin3 = nn.Linear(84, 10)
 
     def forward(self, x):
-        out = params 
         h1 = self.maxpool1(self.conv1(x)).relu()
         h2 = self.maxpool2(self.conv2(h1)).relu()
         h2 = h2.flatten(start_dim=1)
@@ -55,7 +54,7 @@ net = ConvNet()
 lossfn = CrossEntropyLoss() 
 num_epochs = 10
 
-def loss(params, X, y):
+def loss(X, y):
     y_hat = net(X)
     out = lossfn(y_hat, y)
     return out
