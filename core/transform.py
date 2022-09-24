@@ -1,10 +1,65 @@
 from core.tensor import Tensor
+from typing import NamedTuple
 
+class FrameStack:
+    stack = []
+
+    def add(self, frame):
+        self.stack.append(frame)
+    
+    def remove(self, frame):
+        self.stack.remove(frame)
+
+frame_stack = FrameStack()
+
+class Frame:
+
+    module_stack = []
+    
+    def __init__(self, params, state):
+        self.params = params
+        self.state = state 
+    
+    @classmethod
+    def create(cls, params, state):
+        frame = Frame(params=params, state=state)
+        return frame
+    
+    def module(self):
+        return module_stack
+
+def current_name():
+    frame = current_frame()
+    module_state = frame.module_stack if frame.module_stack else None
+    module = module_state.module if module_state is not None else None
+    return module.name if module is not None else "--" 
+
+def current_frame():
+    return frame_stack.stack[0]
+
+def get_param(name, shape):
+    frame = current_frame()
+    bundle_name = current_name()
+    if bundle_name not in frame.params:
+        param = None
+    else:
+        param = frame.params[bundle_name].get(name)
+    
+    if param is None:
+        if name == "w":
+            param = Tensor.randn(*shape)
+        elif name == "b":
+            param = Tensor.zeros(*shape)
+        frame.params[bundle_name+name] = {} 
+        frame.params[bundle_name+name][name] = param
+
+    return param
 
 class Context:
     def __init__(self, params, state):
         self._params = params
         self._state = state
+        self.frame = None
 
     def get_params(self):
         return self._params
@@ -14,8 +69,12 @@ class Context:
         return self._state
 
     def __enter__(self):
-        return self    
+        self.frame = Frame.create(params=self._params, state=self._state)
+        frame_stack.add(self.frame)
+        return self
+
     def __exit__(self, exc_type, exc_val, exc_tb):
+        frame_stack.remove(self.frame)
         return exc_type is None
 
 def new_ctx(params=None, state=None):
@@ -25,7 +84,6 @@ def new_ctx(params=None, state=None):
         state = dict()
 
     return Context(params, state)
-
 
 class Transformed:
     def __init__(self, init_fn, apply_fn):
@@ -92,12 +150,4 @@ def tie_fn(f, init_fn, apply_fn):
         f = getattr(f.init, "_original_fn")
     init_fn._original_fn = f
     apply_fn._original_fn = f
-
-
-
-
-
-
-
-
 

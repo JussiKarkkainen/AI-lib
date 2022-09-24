@@ -2,6 +2,7 @@ from core.tensor import Tensor
 from collections import OrderedDict
 import warnings
 import numpy as np
+from core.transform import get_param
 
 class MSELoss:
     def __init__(self, reduction="sum"):
@@ -31,16 +32,17 @@ class CrossEntropyLoss:
         elif self.reduction == "sum":
             return out.sum()
 
-
 # Base class for all models
 class Module:
     
     __parameters = []
     
-    def __init__(self):
+    def __init__(self, name=None):
         self.training = True
         self._modules = OrderedDict()
         self._parameters = self.__parameters
+        if name is None:
+            self.name = type(self).__name__
 
     def forward(self, x):
         raise NotImplementedError
@@ -68,7 +70,7 @@ class Module:
 
     def __call__(self, *inputs): 
         return self.forward(*inputs) 
-
+'''
 class Linear(Module):
     def __init__(self, in_features, out_features, bias=True):
         super().__init__()
@@ -80,6 +82,22 @@ class Linear(Module):
         
     def forward(self, x):
         return x.matmul(self.weights) + self.bias
+'''
+class Linear(Module):
+    def __init__(self, out_features, bias=True, name=None):
+        super().__init__(name=name)
+        self.out_features = out_features
+        self.bias = bias
+
+    def forward(self, x):
+        self.in_features = x.shape[1]
+        w = get_param("w", (self.in_features, self.out_features))
+        ret = x.matmul(w)
+        if self.bias:
+            b = get_param("b", (self.out_features,))
+            ret += b
+        return ret
+
 
 class Conv2d(Module):
     def __init__(self, in_channels, out_channels, kernel_size, stride=1, padding=0, bias=True):
