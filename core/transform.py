@@ -43,7 +43,7 @@ def get_param(name, shape):
     if bundle_name not in frame.params:
         param = None
     else:
-        param = frame.params[bundle_name].get(name)
+        param = frame.params[bundle_name+name].get(name)
     
     if param is None:
         if name == "w":
@@ -69,6 +69,7 @@ class Context:
         return self._state
 
     def __enter__(self):
+        print(self._params)
         self.frame = Frame.create(params=self._params, state=self._state)
         frame_stack.add(self.frame)
         return self

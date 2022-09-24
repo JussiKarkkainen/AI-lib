@@ -46,11 +46,11 @@ class ConvNet(nn.Module):
         out = self.lin3(h4)
         return out
 
-net = ConvNet()
 lossfn = nn.CrossEntropyLoss() 
 num_epochs = 10
 
 def loss(X, y):
+    net = ConvNet()
     return lossfn(net(X), y)
 
 loss_fn_t = transform(loss)
@@ -58,12 +58,10 @@ x_init, y_init = next(train_loader)
 x_init, y_init = Tensor(np.array(x_init)), Tensor(np.array(y_init))
 params = loss_fn_t.init(x_init, y_init)
 optim = SGD(params, lr=0.01)
-print(params)
 
 print("starting training")
 for epoch in range(num_epochs):
     for X, y in trainloader:
-        print(X.shape)
         X = Tensor(np.array(X))
         y = Tensor(np.array(y))
         grads = grad(loss_fn_t.apply)(params, X, y)
