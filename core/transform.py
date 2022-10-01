@@ -1,45 +1,87 @@
+from __future__ import annotations
+import collections
+import functools
+import contextlib
+import dataclasses
 from core.tensor import Tensor
-from typing import NamedTuple
+from typing import NamedTuple, List, Dict, Optional, Any, DefaultDict
+import collections 
+
+ModuleState = collections.namedtuple("ModuleState", ("module", "method_name"))
+Module = Any
+ddict = functools.partial(collections.defaultdict, dict)
 
 class FrameStack:
-    stack = []
+    def __init__(self):    
+        self._stack = collections.deque()
 
     def add(self, frame):
-        self.stack.append(frame)
+        self._stack.append(frame)
     
-    def remove(self, frame):
-        self.stack.remove(frame)
+    def pop(self):
+        return self._stack.pop()
 
+    def peek(self):
+        return self._stack[-1]
+
+    @contextlib.contextmanager
+    def __call__(self, elem):
+        self.push(elem)
+        try:
+            yield
+        finally:
+            assert self.pop() is elem
+
+context_stack = FrameStack()
 frame_stack = FrameStack()
+current_frame = frame_stack.peek
 
-class Frame:
+class Frame(NamedTuple):
 
-    module_stack = []
-    
-    def __init__(self, params, state):
-        self.params = params
-        self.state = state 
+    module_stack: FrameStack[ModuleState]
+    counter_stack: FrameStack[collections.Counter()]
+    used_names_stack: FrameStack[Set[str]]
+    params: Dict 
+    state: Dict
     
     @classmethod
     def create(cls, params, state):
-        frame = Frame(params=params, state=state)
+        frame = Frame(params=params, state=state, module_stack=FrameStack(),
+                      counter_stack=FrameStack(), used_names_stack=FrameStack())
         return frame
+  
+    def assign_name(self, name: str) -> str:
+        num = self.module_counts[name]
+        self.module_counts[num] += 1
+        return f"{name}>{num}"
     
-    def module(self):
-        return module_stack
+
+    # Used later with metaclasses, check wrap_method() in module.py in haiku
+    @contextlib.contextmanager
+    def module(self, module_state: ModuleState):
+        with self.module_stack(module_state), \
+             self.counter_stack(collections.Counter()), \
+             self.used_names_stack(set()):
+            yield
+
 
 def current_name():
-    frame = current_frame()
-    module_state = frame.module_stack if frame.module_stack else None
-    module = module_state.module if module_state is not None else None
+    module = current_module()
     return module.name if module is not None else "--" 
 
-def current_frame():
-    return frame_stack.stack[0]
+def current_module():
+    frame = current_frame()
+    print(frame.module_stack._stack)
+    module_state = frame.module_stack.peek() if frame.module_stack else None
+    return module_state.module if module_state is not None else None
 
 def get_param(name, shape):
     frame = current_frame()
     bundle_name = current_name()
+    
+    full_name = bundle_name + "/" + name
+    context = GetContext(full_name=full_name, module=current_module(),
+                         shape=shape)
     if bundle_name not in frame.params:
         param = None
     else:
@@ -50,16 +92,32 @@ def get_param(name, shape):
             param = Tensor.randn(*shape)
         elif name == "b":
             param = Tensor.zeros(*shape)
-        frame.params[bundle_name+name] = {} 
-        frame.params[bundle_name+name][name] = param
+        frame.params[bundle_name][name] = param
 
     return param
+
+class GetContext(NamedTuple):
+    full_name: str
+    module: Optional[Module]
+    shape: tuple()
+
+    @property
+    def module_name(self):
+        module_name, _ = self.full_name.rsplit("/", 1)
+        return module_name
+
+    @property
+    def name(self):
+        _, name = self.full_name.rsplit("/", 1)
+        return name
 
 class Context:
     def __init__(self, params, state):
         self._params = params
         self._state = state
-        self.frame = None
+        self._counter = collections.Counter()
+        self._names = set()
+        self._expected_stack = FrameStack()
 
     def get_params(self):
         return self._params
@@ -69,20 +127,24 @@ class Context:
         return self._state
 
     def __enter__(self):
-        print(self._params)
-        self.frame = Frame.create(params=self._params, state=self._state)
-        frame_stack.add(self.frame)
+        frame = Frame.create(params=self._params, state=self._state)
+        frame.used_names_stack.add(self._names)
+        frame.counter_stack.add(self._counter)
+        self._expected_stack.add(frame)
+        context_stack.add(self)
+        frame_stack.add(frame)
         return self
 
     def __exit__(self, exc_type, exc_val, exc_tb):
-        frame_stack.remove(self.frame)
+        assert frame_stack.pop() is self._expected_stack.pop()
+        assert context_stack.pop() is self
         return exc_type is None
 
 def new_ctx(params=None, state=None):
     if params == None:
-        params = dict()
+        params = ddict()
     if state == None:
-        state = dict()
+        state = ddict()
 
     return Context(params, state)
 

@@ -50,6 +50,8 @@ loss_fn_t = transform(loss)
 x_init, y_init = next(train_loader)
 x_init, y_init = Tensor(np.array(x_init)), Tensor(np.array(y_init))
 params = loss_fn_t.init(x_init, y_init)
+print(params)
+'''
 optim = SGD(params, lr=0.01)
 
 print("starting training")
@@ -62,4 +64,4 @@ for epoch in range(10):
 
     print("training")
 
-
+'''
