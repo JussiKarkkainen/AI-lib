@@ -35,12 +35,12 @@ class CrossEntropyLoss:
 
 class Linear(Module):
     def __init__(self, out_features, bias=True, name=None):
-        super().__init__(name=name)
+        super().__init__()
         self.out_features = out_features
         self.bias = bias
     
     @wrap_method
-    def forward(self, x):
+    def __call__(self, x):
         self.in_features = x.shape[1]
         w = get_param("w", (self.in_features, self.out_features))
         ret = x.matmul(w)
