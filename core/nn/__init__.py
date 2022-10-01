@@ -1,9 +1,16 @@
 from core.tensor import Tensor
 from collections import OrderedDict
+from typing import NamedTuple, Any
 import warnings
 import numpy as np
 from core.transform import get_param
 from core.nn.module import Module, wrap_method
+import core.nn.optim
+
+class TrainingState(NamedTuple):
+    params: Any
+    opt_state: optim.OptState
+
 
 class MSELoss:
     def __init__(self, reduction="sum"):
