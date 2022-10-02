@@ -53,18 +53,19 @@ def main():
     
     def loss(params, X, y):
         out = network.apply(params, X)
-        out = lossfn(X, y)
+        out = lossfn(out, y)
         return out
 
     def update(state, X, y):
         grads = grad(loss)(state.params, X, y)
+        print(grads)
         params, opt_state = optimizer.update(grads, state.opt_state)
         #params = optim.apply_updates(state.params, updates)
         return nn.TrainingState(params, opt_state)
    
     def evaluate(params, X, y):
         out = network.apply(params, X, y)
-        predictions = jnp.argmax(out, axis=-1)
+        predictions = np.argmax(out, axis=-1)
         return Tensor.mean(predictions == y)
 
     train_loader, x_init, y_init = load_dataset()
