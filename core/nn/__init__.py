@@ -11,7 +11,6 @@ class TrainingState(NamedTuple):
     params: Any
     opt_state: optim.OptState
 
-
 class MSELoss:
     def __init__(self, reduction="sum"):
         self.reduction = reduction

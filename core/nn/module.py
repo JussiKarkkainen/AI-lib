@@ -19,7 +19,6 @@ class Module:
         self._unique_name = tf.current_frame().create_unique_module_name(self.__class__.__name__)
 
 
-
 def wrap_method(f):
     
     def wrapped(self, *args, **kwargs):

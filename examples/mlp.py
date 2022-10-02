@@ -4,12 +4,11 @@ from core.tensor import Tensor
 from core.autograd import grad
 import core.nn as nn
 from core.transform import transform
-import core.nn.optim
+import core.nn.optim as optim
 import matplotlib.pyplot as plt
 import torch
 from torchvision import datasets, transforms
 from core.nn.module import wrap_method
-
 
 def load_dataset():
     transformn = transforms.Compose(
@@ -37,7 +36,6 @@ class MLP(nn.Module):
     
     @wrap_method
     def __call__(self, x):
-        x = x.flatten()
         h1 = self.w1(x).relu()
         h2 = self.w2(h1).relu()
         out = self.out(h2)
@@ -51,16 +49,17 @@ lossfn = nn.CrossEntropyLoss()
 
 def main():
     network = transform(net_fn)
-    optimizer = optim.sgd
-
+    optimizer = optim.sgd()
+    
     def loss(params, X, y):
         out = network.apply(params, X)
         out = lossfn(X, y)
-    
+        return out
+
     def update(state, X, y):
         grads = grad(loss)(state.params, X, y)
-        updates, opt_state = optimizer.update(grads, state.opt_state)
-        params = optim.apply_updates(state.params, updates)
+        params, opt_state = optimizer.update(grads, state.opt_state)
+        #params = optim.apply_updates(state.params, updates)
         return nn.TrainingState(params, opt_state)
    
     def evaluate(params, X, y):
@@ -69,19 +68,19 @@ def main():
         return Tensor.mean(predictions == y)
 
     train_loader, x_init, y_init = load_dataset()
-    init_params = network.init(x_init, y_init)
-    init_opt_state = optimizer.init(initial_params)
-
-    state = nn.TrainingState(init_params, init_opt_state)
+    init_params = network.init(x_init.flatten())
+    init_opt_state = optimizer.init(init_params)
+    state = nn.TrainingState(params=init_params, opt_state=init_opt_state)
 
     for epoch in range(10):
         for X, y in train_loader:
-            X = Tensor(np.array(X))
+            X = Tensor(np.array(X)).flatten()
             y = Tensor(np.array(y))
             state = update(state, X, y)
 
         accuracy = evaluate(state.params, X, y)
         print(f"epoch: {epoch}, accuracy: {accuracy:.3f}")
+
 
 if __name__ == "__main__":
     main()

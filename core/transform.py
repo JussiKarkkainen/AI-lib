@@ -52,7 +52,7 @@ def transform(f):
         return frame.params
 
     def apply_f(params, *args, **kwargs):
-        frame_stack.append(Frame(params))
+        frame_stack.append(Frame(params[0]))
         outs = f(*args, **kwargs)
         frame_stack.pop()
         return outs

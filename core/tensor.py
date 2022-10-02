@@ -30,7 +30,7 @@ class Tensor:
         self._graph = None 
 
     def __repr__(self):
-        return f"<Tensor: {self.data} shape: {self.shape}>"
+        return f"<Tensor with shape: {self.shape}>"
     
     def __getitem__(self, key):
         return Tensor(self.data[key])

@@ -1,5 +1,5 @@
 from core.tensor import Tensor
-from utils.misc import change_vars
+from utils.misc import change_vars, change_var
 
 def topological_sort(root):
     order, vis = list(), set()
@@ -25,7 +25,7 @@ def backward(g, root):
             gradients[p] = g if gradients.get(p) is None else gradients.get(p)+g
     return [x for x in reversed(gradients.values())]
 
-def grad(func, argnums=0):
+def grad(func, argnums=0, return_val=False):
     '''
     Constuct the gradient function that returns the gradient of 
     the given function w.r.t inputs
@@ -35,7 +35,7 @@ def grad(func, argnums=0):
     '''
     def gradfun(*args, **kwargs):
         # Replace args with *x
-        fun = lambda *x : func(*change_vars(args, argnums, x), **kwargs)
+        fun = lambda *x : func(*change_var(args, argnums, x), **kwargs)
         vjp, ans = make_vjp(fun, args)
         return vjp(Tensor.ones(ans.shape))
     return gradfun
