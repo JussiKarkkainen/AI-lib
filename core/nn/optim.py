@@ -33,7 +33,7 @@ def sgd(lr=0.01):
         for grad in grads:
             velocity.append(Tensor.zeros(grad.shape))
         '''
-        for param, grad in zip(state.params.values(), grads):
+        for param, grad in zip(state.params.values(), grads.values()):
             #v = self.momentum * vel + self.weight_decay * grad
             param -= lr * grad
         return state.params, OptState(state.params)

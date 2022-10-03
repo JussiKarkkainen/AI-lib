@@ -35,7 +35,9 @@ class ReLU(Function):
         return x.unary_op(UnaryOp.ReLU)
 
     def vjp(self, dout):
-        return self.saved_inputs[0].unary_op(UnaryOp.Sign).unary_op(UnaryOp.ReLU).binary_op(BinaryOp.Mul, dout)
+        tmp = self.saved_inputs[0].unary_op(UnaryOp.Sign).unary_op(UnaryOp.ReLU)
+        tmp = Buffer.fromCpu(tmp, device="cpu")
+        return tmp.binary_op(BinaryOp.Mul, dout)
 
 class Exp(Function):
     def forward(self, x):
@@ -44,7 +46,9 @@ class Exp(Function):
 
     def vjp(self, dout):
         x = self.saved_inputs[0]
-        return x.unary_op(UnaryOp.Exp).binary_op(BinaryOp.Mul, dout)
+        tmp = x.unary_op(UnaryOp.Exp)
+        tmp = Buffer.fromCpu(tmp, device="cpu")
+        return tmp.binary_op(BinaryOp.Mul, dout)
 
 class Log(Function):
     def forward(self, x):
@@ -76,13 +80,19 @@ class Mul(Function):
 
 class Div(Function):
     def forward(self, x, y):
+        self.save_for_backward(x, y)
         return x.binary_op(BinaryOp.Div, y)
 
-    def vjp(self, x, y, dout):
+    def vjp(self, dout):
         b = self.saved_inputs[1]
         a = self.saved_inputs[0]
         y_grad = dout.binary_op(BinaryOp.Div, b) 
-        x_grad = dout.binary_op(BinaryOp.Mul, a).binary_op(BinaryOp.Div, b.binary_op(BinaryOp.Pow, 2))
+        tmp = dout.binary_op(BinaryOp.Mul, a)
+        tmp = Buffer.fromCpu(tmp, device="cpu")
+        tmp1 = Buffer.fromCpu(np.array(2), device="cpu")
+        tmp2 = b.binary_op(BinaryOp.Pow, tmp1)
+        tmp2 = Buffer.fromCpu(tmp2, device="cpu")
+        x_grad = tmp.binary_op(BinaryOp.Div, tmp2) 
         return y_grad, x_grad
 
 class Pow(Function):

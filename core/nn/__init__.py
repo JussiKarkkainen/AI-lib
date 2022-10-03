@@ -47,10 +47,10 @@ class Linear(Module):
     
     @wrap_method
     def __call__(self, x):
-        self.in_features = x.shape[0]
+        self.in_features = x.shape[-1]
         w = get_param("w", (self.in_features, self.out_features))
         b = get_param("b", (self.out_features,))
-        ret = w.matmul(x) + b if self.bias else w.matmul(x)
+        ret = x.matmul(w) + b if self.bias else x.matmul(w)
         return ret
 
 class Conv2d(Module):
