@@ -30,7 +30,7 @@ class Tensor:
         self._graph = None 
 
     def __repr__(self):
-        return f"<Tensor with shape: {self.shape}>"
+        return f"<Tensor {self.data} with shape: {self.shape}>"
     
     def __getitem__(self, key):
         return Tensor(self.data[key])
@@ -140,11 +140,11 @@ class Tensor:
         return Tensor.Pool2d(self, kernel_size=kernel_size, stride=stride, padding=padding, pooltype="avg")
     '''
     
-    def conv2d(self, w, b, padding=0, stride=1):
+    def conv2d(self, w, padding=0, stride=1):
         # Inputs to Corr2d needs to be of shape: input=DxCxHxW, kernel=NKxCxHKxWK
         self = self._reshape_conv()
         w = w._reshape_conv()
-        return Tensor.Corr2d(self, w, b, padding=padding, stride=stride)
+        return Tensor.Corr2d(self, w, padding=padding, stride=stride)
    
     def sum(self, axis=None, keepdims=False):
         dims = range(len(self.shape) + 1) if axis == None else [axis]

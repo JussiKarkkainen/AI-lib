@@ -93,7 +93,7 @@ class Buffer:
         src = tuple(self.op if self.op_type == TransformOp else i for i in tuple([self]))
         buf = Buffer(Ops(op, src), TransformOp, self.device)
         if return_buf:
-            return Buffer.fromCpu(eval_transform_op(buf, shape)[0], self.device)
+            return Buffer.fromCpu(eval_op_all(buf, shape)[0], self.device)
         return eval_op_all(buf, shape)[0]
 
     def tensor_op(x, op, y):

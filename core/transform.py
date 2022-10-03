@@ -35,8 +35,15 @@ def get_param(name, shape):
     param_path = frame.create_param_path(name)
 
     if frame.is_init:
-        frame.params[param_path] = Tensor.randn(*shape)
+        if name == "w":
+            x = Tensor([[1., 3., 5., 7., 9., 2., 4., 6., 8.]])
+            frame.params[param_path] = x 
+            #frame.params[param_path] = Tensor.randn(*shape)
+        elif name == "b":
+            frame.params[param_path] = Tensor.zeros(*shape)
 
+    if isinstance(frame.params, tuple):
+        frame.params = frame.params[0]
     return frame.params[param_path]
 
 class Transformed(NamedTuple):
@@ -52,7 +59,7 @@ def transform(f):
         return frame.params
 
     def apply_f(params, *args, **kwargs):
-        frame_stack.append(Frame(params[0]))
+        frame_stack.append(Frame(params))
         outs = f(*args, **kwargs)
         frame_stack.pop()
         return outs

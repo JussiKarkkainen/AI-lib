@@ -4,6 +4,7 @@ from core.tensor import Tensor
 from core.buffer import Buffer
 from core.buffer import BinaryOp, UnaryOp, ReduceOp, TransformOp, TensorOp
 from utils.misc import argsort, im2col_indices, col2im_indices
+from core.backend.cpu_ops import CpuBuffer
 
 class Function:
     def __init__(self, *tensors, device=None):
@@ -60,6 +61,7 @@ class Add(Function):
         return x.binary_op(BinaryOp.Add, y)
 
     def vjp(self, dout):
+        dout = CpuBuffer.fromCpu(dout.op.arg) 
         return dout, dout
 
 class Mul(Function):
@@ -85,17 +87,25 @@ class Div(Function):
 
 class Pow(Function):
     def forward(self, x, y):
-        return x.binary_op(BinaryOp.Pow, y)
+        out = x.binary_op(BinaryOp.Pow, y)
+        self.save_for_backward(x, y, out)
+        return out
 
     def vjp(self, dout):
-        x, y, powxy = ctx.saved_inputs
+        x, y, powxy = self.saved_inputs
+        powxy = Buffer.fromCpu(powxy, device="cpu")
         grad_x, grad_y = None, None
-        if self.input_grad[0]:
-            tmp = y.binary_op(BinaryOps.Mul, powxy.binary_op(BinaryOps.Div, x))
-            grad_x = dout.binary_op(BinaryOps.Mul, tmp)
-        if self.input_grad[1]:
-            tmp = x.unary_op(UnaryOps.Log).binary_op(BinaryOps.Mul, powxy) 
-            grad_y = dout.binary_op(BinaryOps.Mul, tmp)
+        if self.saved_inputs[0]:
+            t = Buffer.fromCpu(powxy.binary_op(BinaryOp.Div, x), device="cpu")
+            tmp = y.binary_op(BinaryOp.Mul, t)
+            tmp = Buffer.fromCpu(tmp, device="cpu")
+            grad_x = dout.binary_op(BinaryOp.Mul, tmp)
+        if self.saved_inputs[1]:
+            tmp = x.unary_op(UnaryOp.Log)
+            tmp = Buffer.fromCpu(tmp, device="cpu")
+            tmp = tmp.binary_op(BinaryOp.Mul, powxy) 
+            tmp = Buffer.fromCpu(tmp, device="cpu")
+            grad_y = dout.binary_op(BinaryOp.Mul, tmp)
         return grad_x, grad_y 
 
 #ReduceOp
@@ -191,21 +201,21 @@ class Pool2d(Function):
         return dx
 
 class Corr2d(Function):
-    def forward(self, x, w, b, padding, stride):
+    def forward(self, x, w, padding, stride):
         ''' Convolution on inputs with shapes:
         x -> input = DxCxHxW
         w -> kernel = NKxCxHKxWk
         '''
         self.save_for_backward(x, w)
         N, C, H, W = x.shape
-        self.b = b.transform_op(TransformOp.Reshape, (-1, 1))
         self.pad, self.stride = padding, stride
         self.n_K, self.c_K, self.h_K, self.w_K = w.shape
         self.X_cols = im2col_indices(x.op.arg, self.h_K, self.w_K, padding, stride)
         W_cols = w.transform_op(TransformOp.Reshape, (self.n_K, -1))
         out_height = int(((H + 2*padding - self.h_K) / stride + 1))
         out_width = int(((W + 2*padding - self.w_K) / stride + 1))
-        out = W_cols.tensor_op(TensorOp.Matmul, self.X_cols).binary_op(BinaryOp.Add, self.b)
+        #out = W_cols.tensor_op(TensorOp.Matmul, self.X_cols).binary_op(BinaryOp.Add, self.b)
+        out = W_cols.tensor_op(TensorOp.Matmul, self.X_cols)
         out = out.reshape((self.n_K, out_height, out_width, N))
         out = out.transform_op(TransformOp.Permute, (3, 0, 1, 2))
         return out
@@ -219,5 +229,5 @@ class Corr2d(Function):
         w_reshape = w.transform_op(TransformOp.Reshape, (self.n_K, -1))
         x_grad_col = w_reshape.transform_op(TransformOp.Permute, None).tensor_op(TensorOp.Matmul, dout_reshape)
         x_grad = col2im_indices(x_grad_col, x.shape, self.h_K, self.w_K, padding=self.pad, stride=self.stride)
-        b_grad = dout.unary_op(UnaryOp.Sum, axis=(0, 2, 3))
-        return x_grad, w_grad, b_grad
+        #b_grad = dout.unary_op(UnaryOp.Sum, axis=(0, 2, 3))
+        return x_grad, w_grad

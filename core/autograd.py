@@ -1,5 +1,6 @@
 from core.tensor import Tensor
 from utils.misc import change_vars, change_var
+import pprint
 
 def topological_sort(root):
     order, vis = list(), set()
@@ -23,7 +24,9 @@ def backward(g, root):
         grads = [Tensor(g) for g in grads if g is not None]
         for p, g in zip(node._graph.parents, grads):
             gradients[p] = g if gradients.get(p) is None else gradients.get(p)+g
-    return [x for x in reversed(gradients.values())]
+    #pprint.pprint(gradients)
+    return outgrads
+    #return [x for x in reversed(gradients.values())] 
 
 def grad(func, argnums=0, return_val=False):
     '''
@@ -35,8 +38,8 @@ def grad(func, argnums=0, return_val=False):
     '''
     def gradfun(*args, **kwargs):
         # Replace args with *x
-        fun = lambda *x : func(*change_var(args, argnums, x), **kwargs)
-        vjp, ans = make_vjp(fun, args)
+        fun = lambda *x : func(*change_vars(args, argnums, x), **kwargs)
+        vjp, ans = make_vjp(fun, args[argnums])
         return vjp(Tensor.ones(ans.shape))
     return gradfun
 
@@ -44,8 +47,8 @@ def make_vjp(func, x):
     '''
     Construct function for vector-Jacobian product
     '''
-    end_value = func(*x)
-    if end_value.shape != (): 
+    end_value = func(x)
+    if end_value.shape != () and end_value.shape != (1, 1):
         raise TypeError("Grad only works with scalar output functions")
     def vjp(g): 
         return backward(g, end_value)

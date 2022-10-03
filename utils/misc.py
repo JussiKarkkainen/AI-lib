@@ -11,12 +11,12 @@ def change_vars(arg, argnums, val):
             return tuple(_arg)
     else:
         _arg[argnums] = val
-        return _arg[0]
+        return _arg
 
 def change_var(arg, argnum, val):
     _arg = list(arg)
     _arg[argnum] = val
-    return tuple(_arg)
+    return _arg
 
 def argsort(seq):
     return sorted(range(len(seg)), key=seq.__getitem__)
