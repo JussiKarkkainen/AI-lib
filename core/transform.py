@@ -36,9 +36,7 @@ def get_param(name, shape):
 
     if frame.is_init:
         if name == "w":
-            x = Tensor([[1., 3., 5., 7., 9., 2., 4., 6., 8.]])
-            frame.params[param_path] = x 
-            #frame.params[param_path] = Tensor.randn(*shape)
+            frame.params[param_path] = Tensor.randn(*shape)
         elif name == "b":
             frame.params[param_path] = Tensor.zeros(*shape)
 

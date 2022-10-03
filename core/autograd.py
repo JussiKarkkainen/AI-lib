@@ -25,10 +25,16 @@ def backward(g, root, input_nodes):
         for p, g in zip(node._graph.parents, grads):
             gradients[p] = g if gradients.get(p) is None else gradients.get(p)+g
     
-    fin_grads = []
-    for n in input_nodes:
-        fin_grads.append(gradients[n])
-    return fin_grads
+    if isinstance(input_nodes, dict): 
+        for k, v in zip(input_nodes.keys(), input_nodes.values()):
+            input_nodes[k] = gradients[v]
+    else:
+        fin_grads = []
+        for v in input_nodes:
+            fin_grads.append(gradients[v])
+            return fin_grads
+
+    return input_nodes
 
 def grad(func, argnums=0, return_val=False):
     '''
@@ -53,6 +59,6 @@ def make_vjp(func, x):
     if end_value.shape != () and end_value.shape != (1, 1):
         raise TypeError("Grad only works with scalar output functions")
     def vjp(g): 
-        return backward(g, end_value, x.values())
+        return backward(g, end_value, x)
     return vjp, end_value
      
