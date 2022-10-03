@@ -14,7 +14,7 @@ def topological_sort(root):
         return order
     return _topo(root)
 
-def backward(g, root):
+def backward(g, root, input_nodes):
     gradients = {root: g}
     for node in reversed(topological_sort(root)):
         outgrads = gradients.pop(node)
@@ -24,9 +24,11 @@ def backward(g, root):
         grads = [Tensor(g) for g in grads if g is not None]
         for p, g in zip(node._graph.parents, grads):
             gradients[p] = g if gradients.get(p) is None else gradients.get(p)+g
-    #pprint.pprint(gradients)
-    return outgrads
-    #return [x for x in reversed(gradients.values())] 
+    
+    fin_grads = []
+    for n in input_nodes:
+        fin_grads.append(gradients[n])
+    return fin_grads
 
 def grad(func, argnums=0, return_val=False):
     '''
@@ -51,6 +53,6 @@ def make_vjp(func, x):
     if end_value.shape != () and end_value.shape != (1, 1):
         raise TypeError("Grad only works with scalar output functions")
     def vjp(g): 
-        return backward(g, end_value)
+        return backward(g, end_value, x.values())
     return vjp, end_value
      
