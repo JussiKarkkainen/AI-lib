@@ -10,7 +10,7 @@ BinaryOp = Enum("BinaryOp", ["Add", "Mul", "Div", "Pow"])
 UnaryOp = Enum("UnaryOp", ["ReLU", "Sign", "Exp", "Log"])
 TensorOp = Enum("TensorOp", ["Matmul", "Conv"])
 LoadOp = Enum("LoadOp", ["fromCpu"])
-ReduceOp = Enum("ReduceOp", ["Sum", "Max"])
+ReduceOp = Enum("ReduceOp", ["Sum", "Max", "NoOp"])
 TransformOp = Enum("TransformOp", ["Reshape", "Permute", "Expand", "Pool2d"])
 Ops = Union[BinaryOp, UnaryOp, ReduceOp, TransformOp, TensorOp, LoadOp] 
 
@@ -29,9 +29,6 @@ class Device:
     buffers : dict = buf_set(devices)
     default : str = "gpu" if os.getenv("GPU") is not None else "cpu"
 
-# These eval functions can be unified/simplified in the future,
-# but for now functionality before optimization
-
 def eval_load_op(buf:Buffer):
     assert(buf.op.op == LoadOp.fromCpu)
     return Device.buffers[buf.device].fromCpu(buf.op.arg), [], LoadOp
@@ -48,7 +45,7 @@ def eval_op_all(parents:Buffer, shape=None, keepdims=None):
         if isinstance(x.op, BinaryOp):
             return resolve(x.src[0]).binary_op(x.op, resolve(x.src[1]))
         if isinstance(x.op, ReduceOp):
-            return resolve(x.src[0]).reduce_op(x.op, shape, keepdims)
+            return resolve(x.src[0]).reduce_op(x.op, shape)
         if isinstance(x.op, TensorOp):
             return resolve(x.src[0]).tensor_op(x.op, resolve(x.src[1]))
         if isinstance(x.op, TransformOp):
@@ -80,10 +77,17 @@ class Buffer:
         buf = Buffer(Ops(op, src), UnaryOp, self.device)
         return eval_op_all(buf)[0]
    
-    def reduce_op(self, op, axis, keepdims=True):
+    def reduce_op(self, op, axis):
         src = tuple(self.op if self.op_type == ReduceOp else i for i in tuple([self]))
-        buf = Buffer(Ops(op, src), ReduceOp, self.device)
-        return eval_op_all(buf, axis, keepdims)[0] 
+        change_shape = list(enumerate(zip(self.shape, axis)))
+        x = Buffer.fromCpu(self.transform_op(TransformOp.Permute, [i for i,(s,n) in change_shape if s == n] \
+                + [i for i,(s,n) in change_shape if s != n]), device="cpu")
+        x = (x,)
+        if self.shape == axis:
+            op = ReduceOp.NoOp
+        
+        buf = Buffer(Ops(op, x), ReduceOp, self.device)
+        return eval_op_all(buf, axis)[0] 
 
     def transform_op(self, op, shape, return_buf=False):
         if shape == self.op.arg.shape and (op == TransformOp.Reshape or op == TransformOp.Expand):

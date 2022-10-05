@@ -24,17 +24,20 @@ def backward(g, root, input_nodes):
         grads = [Tensor(g) for g in grads if g is not None]
         for p, g in zip(node._graph.parents, grads):
             gradients[p] = g if gradients.get(p) is None else gradients.get(p)+g
-    
+
+    ret = dict(input_nodes)
     if isinstance(input_nodes, dict): 
-        for k, v in zip(input_nodes.keys(), input_nodes.values()):
-            input_nodes[k] = gradients[v]
+        for k, v in ret.items():
+            assert ret[k].shape == gradients[v].shape
+            ret[k] = gradients[v]
     else:
         fin_grads = []
         for v in input_nodes:
             fin_grads.append(gradients[v])
             return fin_grads
-
-    return input_nodes
+    
+    del gradients
+    return ret
 
 def grad(func, argnums=0, return_val=False):
     '''
@@ -56,8 +59,7 @@ def make_vjp(func, x):
     Construct function for vector-Jacobian product
     '''
     end_value = func(x)
-    if end_value.shape != () and end_value.shape != (1, 1):
-        raise TypeError("Grad only works with scalar output functions")
+    assert end_value.shape == (1, 1) or end_value.shape == () or end_value.shape == (1,)
     def vjp(g): 
         return backward(g, end_value, x)
     return vjp, end_value

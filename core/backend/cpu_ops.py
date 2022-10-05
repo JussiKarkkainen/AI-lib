@@ -20,12 +20,12 @@ class CpuBuffer(np.ndarray):
         return np.divide(x, y)
     def matmul(x, y):
         return np.matmul(x, y)
-    def max(x, axis, keepdims):
+    def max(x, axis):
         x = np.asarray(x)
-        return np.max(x, axis=axis, keepdims=keepdims)
-    def sum(x, axis, keepdims):
+        return np.max(x, axis=axis, keepdims=True)
+    def sum(x, axis):
         x = np.asarray(x)
-        return np.sum(x, axis=axis, keepdims=keepdims)
+        return np.sum(x, axis=axis, keepdims=True)
     def reshape(x, arg):
         return np.reshape(x, arg)
     def permute(x, arg):
@@ -63,11 +63,14 @@ class CpuBuffer(np.ndarray):
         elif op == BinaryOp.Pow:
             return CpuBuffer.power(x, y)
 
-    def reduce_op(x, op, axis, keepdims=True):
+    def reduce_op(x, op, axis):
+        axis = tuple([i for i,(a,b) in enumerate(zip(x.shape, axis)) if a != b])
         if op == ReduceOp.Sum:
-            return CpuBuffer.sum(x, axis, keepdims=keepdims)
+            return CpuBuffer.sum(x, axis)
         elif op == ReduceOp.Max:
-            return CpuBuffer.max(x, axis, keepdims=keepdims)
+            return CpuBuffer.max(x, axis)
+        elif op == ReduceOp.NoOp:
+            return CpuBuffer.fromCpu(x)
 
     def transform_op(x, op, arg=None):
         if op == TransformOp.Reshape:

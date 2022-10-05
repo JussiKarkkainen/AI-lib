@@ -33,11 +33,13 @@ def sgd(lr=0.01):
         for grad in grads:
             velocity.append(Tensor.zeros(grad.shape))
         '''
-        for param, grad in zip(state.params.values(), grads.values()):
+        for k, grad in zip(state.params.keys(), grads.values()):
             #v = self.momentum * vel + self.weight_decay * grad
-            param -= lr * grad
+            state.params[k] -= lr * grad
+            state.params[k] = state.params[k].detach()
+
         return state.params, OptState(state.params)
-    
+         
     return Optimizer(init_fn, update_fn)
 
 '''
@@ -56,7 +58,7 @@ class RMSprop(Optim):
 
 class Adam(Optim):
     def __init__(self, params, lr=0.001, betas=(0.9, 0.999), eps=1e-8):
-        super().__init__(params)
+        #super().__init__(params)
         self.lr = lr
         self.betas = betas
         self.eps = eps

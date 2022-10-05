@@ -63,7 +63,7 @@ class Log(Function):
 class Add(Function):
     def forward(self, x, y):
         return x.binary_op(BinaryOp.Add, y)
-
+    
     def vjp(self, dout):
         dout = CpuBuffer.fromCpu(dout.op.arg) 
         return dout, dout
@@ -118,11 +118,14 @@ class Pow(Function):
             grad_y = dout.binary_op(BinaryOp.Mul, tmp)
         return grad_x, grad_y 
 
+
 #ReduceOp
 class Sum(Function):
-    def forward(self, x, keepdims, axis=None):
-        self.shape = x.op.arg.shape 
-        return x.reduce_op(ReduceOp.Sum, axis, keepdims)
+    def forward(self, x, axis=None):
+        self.shape = x.shape
+        if axis == None:
+            axis = tuple(x.shape[i] for i in range(len(x.shape)))
+        return x.reduce_op(ReduceOp.Sum, axis)
     
     def vjp(self, dout):
         return dout.transform_op(TransformOp.Expand, self.shape)
@@ -143,11 +146,11 @@ class Max(Function):
 #TransformOp
 class Reshape(Function):
     def forward(self, x, shape):
-        self.shape = shape
+        self.new_shape = x.shape
         return x.transform_op(TransformOp.Reshape, shape)
     
     def vjp(self, dout):
-        return dout.transform_op(TransformOp.Reshape, self.shape)
+        return dout.transform_op(TransformOp.Reshape, self.new_shape)
 
 class Permute(Function):
     def forward(self, x, dims):
@@ -159,11 +162,11 @@ class Permute(Function):
 
 class Expand(Function):
     def forward(self, x, shape):
-        self.shape = shape
+        self.new_shape = x.shape
         return x.transform_op(TransformOp.Expand, shape)
     
     def vjp(self, dout):
-        return dout.reduce_op(ReduceOp.Sum, self.shape)
+        return dout.reduce_op(ReduceOp.Sum, self.new_shape)
 
 # TensorOp
 class Matmul(Function):

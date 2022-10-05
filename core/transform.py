@@ -33,13 +33,12 @@ def current_frame():
 def get_param(name, shape):
     frame = current_frame()
     param_path = frame.create_param_path(name)
-
     if frame.is_init:
         if name == "w":
             frame.params[param_path] = Tensor.randn(*shape)
         elif name == "b":
             frame.params[param_path] = Tensor.zeros(*shape)
-
+    
     if isinstance(frame.params, tuple):
         frame.params = frame.params[0]
     return frame.params[param_path]

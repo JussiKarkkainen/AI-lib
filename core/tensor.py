@@ -46,6 +46,10 @@ class Tensor:
     def device(self):
         return self.device
     
+    # detach tensor from graph
+    def detach(self):
+        return Tensor(self.data)
+
     # Functions for creating tensors 
     @classmethod 
     def arange(cls, end, start=0, **kwargs):
@@ -78,9 +82,10 @@ class Tensor:
     def __rsub__(self, x):
         return self + (-x)
     def tanh(self):
-        return ((2*self).exp() - 1) / ((2*self).exp() + 1)
+        return 2. * ((2. * self).sigmoid()) - 1.
+        #return ((2*self).exp() - 1) / ((2*self).exp() + 1)
     def sigmoid(self):
-        return (1. + (-self).exp()) ** -1
+        return (1. + (-self).exp()) ** -1.
     def sqrt(self):
         return self.pow(0.5)
     def mean(self, axis=None, keepdim=False):
@@ -106,22 +111,41 @@ class Tensor:
         return Tensor.ReLU(self)
     def exp(self):
         return Tensor.Exp(self)
-    def log(self):
-        return Tensor.Log(self)
     def max(self, axis=None, keepdims=False):
         return Tensor.Max(self, axis=axis, keepdims=keepdims)
+    def log(self):
+        return Tensor.Log(self)
+    
+    @staticmethod
+    def broadcast(x, y):
+        '''
+        x_shape, y_shape = x.shape, y.shape
+        cor_shape = x.shape 
+        x_broadcasted, y_broadcasted = x.expand(cor_shape), y.expand(cor_shape)
+        '''
+        tt = [arg for arg in [x,y] if isinstance(arg, Tensor)][0]  # this is the prototype tensor
+        x,y = [Tensor([t]) if not isinstance(t, Tensor) else t for t in [x,y]]
+        x,y = [t.reshape([1]*(max(len(x.shape), len(y.shape))-len(t.shape)) + list(t.shape)) for t in [x,y]]
+        shape_ret = tuple(max(sx, sy) for sx,sy in zip(x.shape, y.shape))
+        return x.expand(shape_ret), y.expand(shape_ret)
+        #return x_broadcasted, y_broadcasted
+
     def add(self, x):
         x = Tensor(x) if not isinstance(x, Tensor) else x
-        return Tensor.Add(self, x)
+        x, y = Tensor.broadcast(self, x)
+        return Tensor.Add(x, y)
     def mul(self, x):
         x = Tensor(x) if not isinstance(x, Tensor) else x
-        return Tensor.Mul(self, x)
+        x, y = Tensor.broadcast(self, x)
+        return Tensor.Mul(x, y)
+    def pow(self, x):
+        x = Tensor(x) if not isinstance(x, Tensor) else x
+        x, y = Tensor.broadcast(self, x)
+        return Tensor.Pow(x, y)
+    
     def div(self, x):
         x = Tensor(x) if not isinstance(x, Tensor) else x
         return Tensor.Div(self, x)
-    def pow(self, x):
-        x = Tensor(x) if not isinstance(x, Tensor) else x
-        return Tensor.Pow(self, x)
     def matmul(self, x):
         return Tensor.Matmul(self, x)
     
@@ -145,11 +169,21 @@ class Tensor:
         self = self._reshape_conv()
         w = w._reshape_conv()
         return Tensor.Corr2d(self, w, padding=padding, stride=stride)
-   
+    
+    def _reduce(self, fxn, axis=None, keepdims=False):
+        if axis is None:
+            axis = range(len(self.shape))
+        if isinstance(axis, int):
+            axis = [axis]
+        axis = tuple([x if x >= 0 else x+len(self.shape) for x in axis])
+        shape = [self.shape[i] for i in range(len(self.shape)) if i not in axis]
+        ret = fxn(self, axis=axis)
+        return ret if keepdims else ret.reshape(shape=[1] if shape == [] else shape)
+    
     def sum(self, axis=None, keepdims=False):
-        dims = range(len(self.shape) + 1) if axis == None else [axis]
-        dims = tuple([x if x >= 0 else x+len(self.shape) for x in list(dims)])
-        out = Tensor.Sum(self, axis=axis, keepdims=keepdims)
+        #dims = range(len(self.shape) + 1) if axis == None else [axis]
+        #dims = tuple([x if x >= 0 else x+len(self.shape) for x in list(dims)])
+        out = self._reduce(Tensor.Sum, axis=axis, keepdims=keepdims)
         return out
 
     def reshape(self, shape):
