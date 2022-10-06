@@ -96,6 +96,7 @@ class Tensor:
         e = f.exp()
         return e / e.sum(axis=len(self.shape)-1, keepdims=True)
     def logsoftmax(self):
+        # there is a bug here somewhere that causes a small deviation in gradients
         f = self - self.max(axis=len(self.shape)-1, keepdims=True)
         e = f.exp()
         s = e.sum(axis=len(self.shape)-1, keepdims=True)

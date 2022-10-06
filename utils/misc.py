@@ -13,7 +13,8 @@ def change_vars(arg, argnums, val):
         _arg[argnums] = val
         if isinstance(_arg[0][0], dict):
             return tuple(_arg)
-        return tuple(list(_arg)[0])
+        ret = [i[0] if isinstance(i, tuple) else i for i in _arg]
+        return tuple(ret)
 
 def argsort(seq):
     return sorted(range(len(seg)), key=seq.__getitem__)

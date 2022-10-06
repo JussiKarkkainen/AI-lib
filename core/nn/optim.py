@@ -36,6 +36,8 @@ def sgd(lr=0.01):
         for k, grad in zip(state.params.keys(), grads.values()):
             #v = self.momentum * vel + self.weight_decay * grad
             state.params[k] -= lr * grad
+            # detach here so new params _graph is None
+            # TODO come up with a better solution
             state.params[k] = state.params[k].detach()
 
         return state.params, OptState(state.params)

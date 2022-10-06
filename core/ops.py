@@ -57,7 +57,7 @@ class Log(Function):
 
     def vjp(self, dout):
         x = self.saved_inputs[0]
-        return x.binary_op(BinaryOp.Mul, -1.).binary_op(BinaryOp.Mul, dout)
+        return dout.binary_op(BinaryOp.Div, x)
 
 # BinaryOp
 class Add(Function):
@@ -89,7 +89,7 @@ class Div(Function):
         y_grad = dout.binary_op(BinaryOp.Div, b) 
         tmp = dout.binary_op(BinaryOp.Mul, a)
         tmp = Buffer.fromCpu(tmp, device="cpu")
-        tmp1 = Buffer.fromCpu(np.array(2), device="cpu")
+        tmp1 = Buffer.fromCpu(np.array(2.), device="cpu")
         tmp2 = b.binary_op(BinaryOp.Pow, tmp1)
         tmp2 = Buffer.fromCpu(tmp2, device="cpu")
         x_grad = tmp.binary_op(BinaryOp.Div, tmp2) 
@@ -123,8 +123,7 @@ class Pow(Function):
 class Sum(Function):
     def forward(self, x, axis=None):
         self.shape = x.shape
-        if axis == None:
-            axis = tuple(x.shape[i] for i in range(len(x.shape)))
+        axis = tuple(1 if i in axis else x.shape[i] for i in range(len(x.shape)))
         return x.reduce_op(ReduceOp.Sum, axis)
     
     def vjp(self, dout):
@@ -132,9 +131,8 @@ class Sum(Function):
 
 class Max(Function):
     def forward(self, x, axis=None, keepdims=False):
+        axis = tuple(1 if i in axis else x.shape[i] for i in range(len(x.shape)))
         out = x.reduce_op(ReduceOp.Max, axis=axis)
-        if axis == None:
-            axis = tuple(x.shape[i] for i in range(len(x.shape)))
         self.save_for_backward(x, out)
         return out
 
@@ -143,7 +141,7 @@ class Max(Function):
         out = Buffer.fromCpu(out, device="cpu")
         out_expanded = out.transform_op(TransformOp.Expand, x.shape)
         max_index = (x.op.arg == out_expanded)
-        tmp = Buffer.fromCpu(np.array(1), device="cpu")
+        tmp = Buffer.fromCpu(np.array(1.), device="cpu")
         max_index = Buffer.fromCpu(max_index, device="cpu").binary_op(BinaryOp.Mul, tmp)
         div = max_index.reduce_op(ReduceOp.Sum, dout.shape)
         div = Buffer.fromCpu(div, device="cpu")

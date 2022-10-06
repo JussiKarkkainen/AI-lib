@@ -34,6 +34,7 @@ def backward(g, root, input_nodes):
         ret = [input_nodes]
         fin_grads = []
         for v in ret:
+            assert v.shape == gradients[v].shape
             fin_grads.append(gradients[v])
             return fin_grads
     
