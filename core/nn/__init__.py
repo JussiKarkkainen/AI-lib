@@ -39,6 +39,19 @@ class CrossEntropyLoss:
         elif self.reduction == "sum":
             return out.sum()
 
+class BCELoss:
+    def __init__(self, reduction="mean"):
+        self.reduction = reduction
+
+    def __call__(self, y_hat, y):
+        bce_loss = Tensor.sum(-y * Tensor.log(y_hat) - (1. - y) * Tensor.log(1. - y_hat))
+        if self.reduction == "none":
+            return out
+        if self.reduction == "mean":
+            return out.mean()
+        elif self.reduction == "sum":
+            return out.sum()
+
 class Linear(Module):
     def __init__(self, out_features, bias=True, name=None):
         super().__init__()
