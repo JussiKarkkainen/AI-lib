@@ -11,12 +11,9 @@ def change_vars(arg, argnums, val):
             return tuple(_arg)
     else:
         _arg[argnums] = val
-        return tuple(_arg)
-
-def change_var(arg, argnum, val):
-    _arg = list(arg)
-    _arg[argnum] = val
-    return tuple(_arg)
+        if isinstance(_arg[0][0], dict):
+            return tuple(_arg)
+        return tuple(list(_arg)[0])
 
 def argsort(seq):
     return sorted(range(len(seg)), key=seq.__getitem__)

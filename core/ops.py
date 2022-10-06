@@ -133,15 +133,23 @@ class Sum(Function):
 class Max(Function):
     def forward(self, x, axis=None, keepdims=False):
         out = x.reduce_op(ReduceOp.Max, axis=axis)
+        if axis == None:
+            axis = tuple(x.shape[i] for i in range(len(x.shape)))
         self.save_for_backward(x, out)
         return out
 
     def vjp(self, dout):
         x, out = self.saved_inputs
-        out_reshape = out.transform_op(TransformOp.Expand, x.shape)
-        # return 1 in the location of the maximum value * dout, 0 otherwise         
-        print("max not vjp not implemented")
-        return None
+        out = Buffer.fromCpu(out, device="cpu")
+        out_expanded = out.transform_op(TransformOp.Expand, x.shape)
+        max_index = (x.op.arg == out_expanded)
+        tmp = Buffer.fromCpu(np.array(1), device="cpu")
+        max_index = Buffer.fromCpu(max_index, device="cpu").binary_op(BinaryOp.Mul, tmp)
+        div = max_index.reduce_op(ReduceOp.Sum, dout.shape)
+        div = Buffer.fromCpu(div, device="cpu")
+        div = div.transform_op(TransformOp.Expand, x.shape)
+        ret = max_index.binary_op(BinaryOp.Div, div)
+        return ret 
 
 #TransformOp
 class Reshape(Function):

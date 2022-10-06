@@ -111,8 +111,6 @@ class Tensor:
         return Tensor.ReLU(self)
     def exp(self):
         return Tensor.Exp(self)
-    def max(self, axis=None, keepdims=False):
-        return Tensor.Max(self, axis=axis, keepdims=keepdims)
     def log(self):
         return Tensor.Log(self)
     
@@ -180,6 +178,8 @@ class Tensor:
         ret = fxn(self, axis=axis)
         return ret if keepdims else ret.reshape(shape=[1] if shape == [] else shape)
     
+    def max(self, axis=None, keepdims=False):
+        return self._reduce(Tensor.Max, axis=axis, keepdims=keepdims)
     def sum(self, axis=None, keepdims=False):
         #dims = range(len(self.shape) + 1) if axis == None else [axis]
         #dims = tuple([x if x >= 0 else x+len(self.shape) for x in list(dims)])

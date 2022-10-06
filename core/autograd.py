@@ -1,5 +1,5 @@
 from core.tensor import Tensor
-from utils.misc import change_vars, change_var
+from utils.misc import change_vars
 import pprint
 
 def topological_sort(root):
@@ -25,14 +25,15 @@ def backward(g, root, input_nodes):
         for p, g in zip(node._graph.parents, grads):
             gradients[p] = g if gradients.get(p) is None else gradients.get(p)+g
 
-    ret = dict(input_nodes)
     if isinstance(input_nodes, dict): 
+        ret = dict(input_nodes)
         for k, v in ret.items():
             assert ret[k].shape == gradients[v].shape
             ret[k] = gradients[v]
     else:
+        ret = [input_nodes]
         fin_grads = []
-        for v in input_nodes:
+        for v in ret:
             fin_grads.append(gradients[v])
             return fin_grads
     
