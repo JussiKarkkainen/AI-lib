@@ -24,14 +24,13 @@ class MSELoss:
         elif self.reduction == "sum":
             return out.sum()
 
+# Sparse categorical cross entropy
 class CrossEntropyLoss:
     def __init__(self, reduction="mean"):    
         self.reduction = reduction
 
     def __call__(self, y_hat, y):
-        logprobs = y_hat.logsoftmax()
-        labels = np.array(y.data).astype(np.int32)
-        out = -1 * (logprobs[range(y.shape[0]), labels])
+        out = y_hat.cross_entropy(y)
         if self.reduction == "none":
             return out
         if self.reduction == "mean":
@@ -44,7 +43,7 @@ class BCELoss:
         self.reduction = reduction
 
     def __call__(self, y_hat, y):
-        bce_loss = Tensor.sum(-y * Tensor.log(y_hat) - (1. - y) * Tensor.log(1. - y_hat))
+        out = Tensor.sum(-y * Tensor.log(y_hat) - (1. - y) * Tensor.log(1. - y_hat))
         if self.reduction == "none":
             return out
         if self.reduction == "mean":

@@ -34,7 +34,9 @@ class Tensor:
     
     def __getitem__(self, key):
         return Tensor(self.data[key])
-
+    def __setitem__(self, key, value):
+        self.data[key] = value
+    
     @property
     def dtype(self):
         return np.float32
@@ -42,7 +44,7 @@ class Tensor:
     @property
     def shape(self):
         return np.shape(self.data)
-
+    
     def device(self):
         return self.device
     
@@ -102,6 +104,10 @@ class Tensor:
         s = e.sum(axis=len(self.shape)-1, keepdims=True)
         return f - s.log()
     
+    def cross_entropy(self, target):
+        logprobs = self.logsoftmax()
+        return Tensor.NLLLoss(logprobs, target)
+
     def flatten(self, start_dim=1, end_dim=-1):
         flat_axis = list(self.shape[start_dim:end_dim])
         flat_axis.append(self.shape[end_dim])

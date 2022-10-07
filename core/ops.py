@@ -174,6 +174,20 @@ class Expand(Function):
     def vjp(self, dout):
         return dout.reduce_op(ReduceOp.Sum, self.new_shape)
 
+# Loss is implemented here because slicing breaks the computational graph and therefore the
+# gradients would be wrong
+class NLLLoss(Function):
+    def forward(self, x, y):
+        one = Buffer.fromCpu(np.array(-1.), device="cpu")
+        labels = np.array(y.op.arg).astype(np.int32)
+        s = x.op.arg[range(y.shape[0]), labels]
+        s = Buffer.fromCpu(s, device="cpu")
+        return one.binary_op(BinaryOp.Mul, s) 
+    
+    def vjp(self, dout):
+        pass
+
+
 # TensorOp
 class Matmul(Function):
     def forward(self, x, y):
