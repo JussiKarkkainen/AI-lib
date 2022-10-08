@@ -105,8 +105,7 @@ class Tensor:
         return f - s.log()
     
     def cross_entropy(self, target):
-        logprobs = self.logsoftmax()
-        return Tensor.NLLLoss(logprobs, target)
+        return Tensor.CrossEntropy(self, target)
 
     def flatten(self, start_dim=1, end_dim=-1):
         flat_axis = list(self.shape[start_dim:end_dim])

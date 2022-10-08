@@ -175,18 +175,61 @@ class Expand(Function):
         return dout.reduce_op(ReduceOp.Sum, self.new_shape)
 
 # Loss is implemented here because slicing breaks the computational graph and therefore the
-# gradients would be wrong
-class NLLLoss(Function):
+# gradients would be wrong.
+# TODO This is very ugly, fix later
+class CrossEntropy(Function):
     def forward(self, x, y):
+        # logsoftmax
+        axis = (1,)
+        axis = tuple(1 if i in axis else x.shape[i] for i in range(len(x.shape)))
+        norm = x.reduce_op(ReduceOp.Max, axis=axis)
+        norm = Buffer.fromCpu(norm, device="cpu")
+        norm = norm.binary_op(BinaryOp.Mul, Buffer.fromCpu(np.array(-1.), device="cpu"))
+        norm = Buffer.fromCpu(norm, device="cpu")
+        f = x.binary_op(BinaryOp.Add, norm) 
+        f = Buffer.fromCpu(f, device="cpu")
+        x = f.unary_op(UnaryOp.Exp)
+        x = Buffer.fromCpu(x, device="cpu")
+        x = x.reduce_op(ReduceOp.Sum, axis=axis) 
+        S = Buffer.fromCpu(x, device="cpu")
+        tmp = Buffer.fromCpu(S.unary_op(UnaryOp.Log), device="cpu").binary_op(BinaryOp.Mul, Buffer.fromCpu(np.array(-1.), device="cpu"))
+        x = f.binary_op(BinaryOp.Add, Buffer.fromCpu(tmp, device="cpu"))
+        # NLLLoss
+        x = Buffer.fromCpu(x, device="cpu")
         one = Buffer.fromCpu(np.array(-1.), device="cpu")
         labels = np.array(y.op.arg).astype(np.int32)
         s = x.op.arg[range(y.shape[0]), labels]
         s = Buffer.fromCpu(s, device="cpu")
+        self.save_for_backward(x, y, labels, s)
         return one.binary_op(BinaryOp.Mul, s) 
     
     def vjp(self, dout):
-        pass
-
+        x = self.saved_inputs[0]
+        y = self.saved_inputs[1]
+        labels = np.array(y.op.arg).astype(np.int32)
+        neg_one = Buffer.fromCpu(np.array(-1.), device="cpu")
+        axis = (1,)
+        axis = tuple(1 if i in axis else x.shape[i] for i in range(len(x.shape)))
+        norm = x.reduce_op(ReduceOp.Max, axis=axis)
+        norm = Buffer.fromCpu(norm, device="cpu")
+        norm = norm.binary_op(BinaryOp.Mul, Buffer.fromCpu(np.array(-1.), device="cpu"))
+        norm = Buffer.fromCpu(norm, device="cpu")
+        f = x.binary_op(BinaryOp.Add, norm) 
+        f = Buffer.fromCpu(f, device="cpu")
+        x = f.unary_op(UnaryOp.Exp)
+        e = Buffer.fromCpu(x, device="cpu")
+        x = e.reduce_op(ReduceOp.Sum, axis=axis) 
+        S = Buffer.fromCpu(x, device="cpu")
+        softmax = e.binary_op(BinaryOp.Div, S)
+        m = y.shape[0]
+        grad = Buffer.fromCpu(softmax, device="cpu")
+        sli = Buffer.fromCpu(grad.op.arg[range(m), labels], device="cpu")
+        grad.op.arg[range(m), labels] = sli.binary_op(BinaryOp.Add, neg_one)
+        m = Buffer.fromCpu(np.array(m), device="cpu")
+        grad = grad.binary_op(BinaryOp.Div, m)
+        # Dont't need to mul with dout because this will always be the second to last node in comp
+        # graph which means dout will always be one
+        return grad, None
 
 # TensorOp
 class Matmul(Function):
