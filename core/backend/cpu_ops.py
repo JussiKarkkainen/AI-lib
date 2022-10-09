@@ -7,7 +7,7 @@ BinaryOp = Enum("BinaryOp", ["Add", "Mul", "Div", "Pow", "Sub", "Matmul"])
 UnaryOp = Enum("UnaryOp", ["ReLU", "Sign", "Exp", "Log"])
 LoadOp = Enum("LoadOp", ["fromCpu"])
 ReduceOp = Enum("ReduceOp", ["Sum", "Max"])
-TransformOp = Enum("TransformOp", ["Reshape", "Permute", "Expand", "Pool2d"])
+TransformOp = Enum("TransformOp", ["Reshape", "Transpose", "Expand", "Strided"])
 Ops = Union[BinaryOp, UnaryOp, ReduceOp, TransformOp, LoadOp] 
 
 UnaryOpDict = {'ReLU': lambda x: np.maximum(x, 0), 'Sign': lambda x: np.sign(x),
@@ -16,6 +16,10 @@ UnaryOpDict = {'ReLU': lambda x: np.maximum(x, 0), 'Sign': lambda x: np.sign(x),
 BinaryOpDict = {'Add': lambda x, y: np.add(x, y), 'Mul': lambda x, y: np.multiply(x, y),
         'Div': lambda x, y: np.divide(x, y), 'Pow': lambda x, y: np.power(x, y), 
         'Sub': lambda x, y: np.substract(x, y), 'Matmul': lambda x, y: np.matmul(x, y)}
+
+TransformOpDict = {'Reshape': lambda x, arg: np.reshape(x, arg), 
+        'Transpose': lambda x, arg: np.transpose(x, arg), 'Expand': lambda x, arg: np.broadcast_to(x, arg),
+        'Strided': lambda x, arg: np.as_strided(x, arg)}
 
 class CpuBuffer(np.ndarray):
     
@@ -61,21 +65,19 @@ class CpuBuffer(np.ndarray):
     
     def binary_op(x, op, y):
         return (BinaryOpDict[str(op).split('.')[1]])(x, y).view(CpuBuffer)
+    
+    def transform_op(x, op, arg=None):
+        return (TransformOpDict[str(op).split('.')[1]])(x, arg).view(CpuBuffer)
 
     def reduce_op(x, op, axis, keepdims=True):
-        axis = tuple([i for i,(a,b) in enumerate(zip(x.shape, axis)) if a != b])
+        change_shape = list(enumerate(zip(x.shape, axis)))
+        x = x.transform_op(TransformOp.Transpose, [i for i,(s,n) in change_shape if s == n] + [i for i,(s,n) in change_shape if s != n])
+        new_shape = tuple([n for _,(s,n) in change_shape if s == n] + [n for _,(s,n) in change_shape if s != n])
+        a = x.transform_op(TransformOp.Reshape, new_shape)
+        axis = tuple([i for i,(a,b) in enumerate(zip(a.shape, new_shape)) if a != b])
         if op == ReduceOp.Sum:
-            return CpuBuffer.sum(x, axis, keepdims).view(CpuBuffer)
+            return CpuBuffer.sum(a, axis).view(CpuBuffer)
         elif op == ReduceOp.Max:
-            return CpuBuffer.max(x, axis, keepdims).view(CpuBuffer)
+            return CpuBuffer.max(a, axis).view(CpuBuffer)
 
-    def transform_op(x, op, arg=None):
-        if op == TransformOp.Reshape:
-            return x.reshape(arg)
-        elif op == TransformOp.Permute:
-            return x.transpose(arg)
-        elif op == TransformOp.Expand:
-            return x.expand(arg)
-        if op == TransformOp.Pool2d:
-            return CpuBuffer.strided(x, arg)
-
+    

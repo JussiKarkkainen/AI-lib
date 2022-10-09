@@ -176,8 +176,6 @@ class Tensor:
     def max(self, axis=None, keepdims=False):
         return self._reduce(Tensor.Max, axis=axis, keepdims=keepdims)
     def sum(self, axis=None, keepdims=False):
-        #dims = range(len(self.shape) + 1) if axis == None else [axis]
-        #dims = tuple([x if x >= 0 else x+len(self.shape) for x in list(dims)])
         out = self._reduce(Tensor.Sum, axis=axis, keepdims=keepdims)
         return out
 
@@ -186,7 +184,7 @@ class Tensor:
     def expand(self, shape):
         return Tensor.Expand(self, shape=shape)
     def transpose(self, dims=None):
-        return Tensor.Permute(self, dims=dims)
+        return Tensor.Transpose(self, dims=dims)
 
 def register(name, function):
     def attach(*x, **kwargs):
