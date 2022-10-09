@@ -65,6 +65,13 @@ class Add(Function):
     def vjp(self, dout):
         return dout, dout
 
+class Sub(Function):
+    def forward(self, x, y):
+        return x.binary_op(BinaryOp.Add, y)
+
+    def vjp(self, dout):
+        return dout, dout.unary_op(UnaryOp.Neg)
+
 class Mul(Function):
     def forward(self, x, y):
         self.save_for_backward(x, y)
