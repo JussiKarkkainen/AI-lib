@@ -1,8 +1,27 @@
 import numpy as np
 from numpy.lib.stride_tricks import as_strided
-from core.buffer import UnaryOp, BinaryOp, ReduceOp, TransformOp, TensorOp
+from enum import Enum
+from typing import Union
+
+BinaryOp = Enum("BinaryOp", ["Add", "Mul", "Div", "Pow", "Sub", "Matmul"])
+UnaryOp = Enum("UnaryOp", ["ReLU", "Sign", "Exp", "Log"])
+LoadOp = Enum("LoadOp", ["fromCpu"])
+ReduceOp = Enum("ReduceOp", ["Sum", "Max"])
+TransformOp = Enum("TransformOp", ["Reshape", "Permute", "Expand", "Pool2d"])
+Ops = Union[BinaryOp, UnaryOp, ReduceOp, TransformOp, LoadOp] 
+
+UnaryOpDict = {'ReLU': lambda x: np.maximum(x, 0), 'Sign': lambda x: np.sign(x),
+        'Exp': lambda x: np.exp(x), 'Log': lambda x: np.log(x)}
+
+BinaryOpDict = {'Add': lambda x, y: np.add(x, y), 'Mul': lambda x, y: np.multiply(x, y),
+        'Div': lambda x, y: np.divide(x, y), 'Pow': lambda x, y: np.power(x, y), 
+        'Sub': lambda x, y: np.substract(x, y), 'Matmul': lambda x, y: np.matmul(x, y)}
 
 class CpuBuffer(np.ndarray):
+    
+    @staticmethod
+    def fromCpu(x):
+        return x.view(CpuBuffer)
 
     def mul(x, y):
         return np.multiply(x, y)
@@ -20,10 +39,10 @@ class CpuBuffer(np.ndarray):
         return np.divide(x, y)
     def matmul(x, y):
         return np.matmul(x, y)
-    def max(x, axis):
+    def max(x, axis, keepdims):
         x = np.asarray(x)
         return np.max(x, axis=axis, keepdims=True)
-    def sum(x, axis):
+    def sum(x, axis, keepdims):
         x = np.asarray(x)
         return np.sum(x, axis=axis, keepdims=True)
     def reshape(x, arg):
@@ -36,41 +55,19 @@ class CpuBuffer(np.ndarray):
         return np.broadcast_to(x, arg).view(CpuBuffer)
     def sign(x):
         return np.sign(x)
-
-    @staticmethod
-    def fromCpu(x):
-        return x.view(CpuBuffer) 
-    def toCpu(x):
-        return x
-
+    
     def unary_op(x, op):
-        if op == UnaryOp.ReLU:
-            return CpuBuffer.relu(x)
-        elif op == UnaryOp.Sign:
-            return CpuBuffer.sign(x)
-        elif op == UnaryOp.Exp:
-            return CpuBuffer.exp(x)
-        elif op == UnaryOp.Log:
-            return CpuBuffer.log(x)
-
+        return (UnaryOpDict[str(op).split('.')[1]])(x).view(CpuBuffer)
+    
     def binary_op(x, op, y):
-        if op == BinaryOp.Add:
-            return CpuBuffer.add(x, y)
-        elif op == BinaryOp.Mul:
-            return CpuBuffer.mul(x, y)
-        elif op == BinaryOp.Div:
-            return CpuBuffer.div(x, y)
-        elif op == BinaryOp.Pow:
-            return CpuBuffer.power(x, y)
+        return (BinaryOpDict[str(op).split('.')[1]])(x, y).view(CpuBuffer)
 
-    def reduce_op(x, op, axis):
+    def reduce_op(x, op, axis, keepdims=True):
         axis = tuple([i for i,(a,b) in enumerate(zip(x.shape, axis)) if a != b])
         if op == ReduceOp.Sum:
-            return CpuBuffer.sum(x, axis)
+            return CpuBuffer.sum(x, axis, keepdims).view(CpuBuffer)
         elif op == ReduceOp.Max:
-            return CpuBuffer.max(x, axis)
-        elif op == ReduceOp.NoOp:
-            return CpuBuffer.fromCpu(x)
+            return CpuBuffer.max(x, axis, keepdims).view(CpuBuffer)
 
     def transform_op(x, op, arg=None):
         if op == TransformOp.Reshape:
@@ -82,6 +79,3 @@ class CpuBuffer(np.ndarray):
         if op == TransformOp.Pool2d:
             return CpuBuffer.strided(x, arg)
 
-    def tensor_op(x, op, y):
-        if op == TensorOp.Matmul:
-            return CpuBuffer.matmul(x, y)

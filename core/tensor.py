@@ -3,11 +3,11 @@ from typing import Optional
 import inspect, importlib, pyclbr
 import functools
 import math
-from core.buffer import Buffer, Device
+#from core.buffer import Buffer, Device
 from core.backend.cpu_ops import CpuBuffer
 
 class Tensor:
-    def __init__(self, data, device=Device.default):
+    def __init__(self, data):
         if isinstance(data, list) or isinstance(data, int) or isinstance(data, float):
             self.data = np.array(data, dtype=np.float32)
         elif isinstance(data, Tensor):
@@ -23,17 +23,15 @@ class Tensor:
         else:
             raise Exception(f"Unable to make tensor from {type(data)}")
         if isinstance(self.data, np.ndarray):
-            self.bufferdata = Buffer.fromCpu(self.data.astype(np.float32), device)
-            self.data = data
+            self.bufferdata = CpuBuffer.fromCpu(self.data.astype(np.float32))
 
-        self.device = device
         self._graph = None 
 
     def __repr__(self):
         return f"<Tensor {self.data} with shape: {self.shape}>"
-    
-    def __getitem__(self, key):
-        return Tensor(self.data[key])
+        
+    def __getitem__(self, val): 
+        return self.data[key]
     def __setitem__(self, key, value):
         self.data[key] = value
     
@@ -44,9 +42,6 @@ class Tensor:
     @property
     def shape(self):
         return np.shape(self.data)
-    
-    def device(self):
-        return self.device
     
     # detach tensor from graph
     def detach(self):
@@ -122,17 +117,11 @@ class Tensor:
     
     @staticmethod
     def broadcast(x, y):
-        '''
-        x_shape, y_shape = x.shape, y.shape
-        cor_shape = x.shape 
-        x_broadcasted, y_broadcasted = x.expand(cor_shape), y.expand(cor_shape)
-        '''
         tt = [arg for arg in [x,y] if isinstance(arg, Tensor)][0]  # this is the prototype tensor
         x,y = [Tensor([t]) if not isinstance(t, Tensor) else t for t in [x,y]]
         x,y = [t.reshape([1]*(max(len(x.shape), len(y.shape))-len(t.shape)) + list(t.shape)) for t in [x,y]]
         shape_ret = tuple(max(sx, sy) for sx,sy in zip(x.shape, y.shape))
         return x.expand(shape_ret), y.expand(shape_ret)
-        #return x_broadcasted, y_broadcasted
 
     def add(self, x):
         x = Tensor(x) if not isinstance(x, Tensor) else x
