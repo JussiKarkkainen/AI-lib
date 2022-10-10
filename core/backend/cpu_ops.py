@@ -29,6 +29,10 @@ class CpuBuffer(np.ndarray):
     @staticmethod
     def fromCpu(x):
         return x.view(CpuBuffer)
+    
+    @staticmethod
+    def ones_like(x):
+        return np.ones_like(x).view(CpuBuffer)
 
     def unary_op(x, op):
         return (UnaryOpDict[str(op).split('.')[1]])(x).view(CpuBuffer)
@@ -40,20 +44,5 @@ class CpuBuffer(np.ndarray):
         return (TransformOpDict[str(op).split('.')[1]])(x, arg).view(CpuBuffer)
     
     def reduce_op(x, op, axis, keepdims=True):
-        return (ReduceOpDict[str(op).split('.')[1]])(x, arg).view(CpuBuffer)
+        return (ReduceOpDict[str(op).split('.')[1]])(x, axis, keepdims).view(CpuBuffer)
 
-    def reduce_op(x, op, axis, keepdims=True):
-        '''
-        change_shape = list(enumerate(zip(x.shape, axis)))
-        l = [i for i,(s,n) in change_shape if s == n] + [i for i,(s,n) in change_shape if s != n] 
-        x = x.transform_op(TransformOp.Transpose, [i for i,(s,n) in change_shape if s == n] + [i for i,(s,n) in change_shape if s != n])
-        new_shape = tuple([n for _,(s,n) in change_shape if s == n] + [n for _,(s,n) in change_shape if s != n])
-        a = x.transform_op(TransformOp.Reshape, axis)
-        axis = tuple([i for i,(a,b) in enumerate(zip(a.shape, new_shape)) if a != b])
-        '''
-        if op == ReduceOp.Sum:
-            return CpuBuffer.sum(x, axis).view(CpuBuffer)
-        elif op == ReduceOp.Max:
-            return CpuBuffer.max(x, axis).view(CpuBuffer)
-
-    

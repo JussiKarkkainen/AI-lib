@@ -1,7 +1,6 @@
 from enum import Enum
 import numpy as np
 from core.tensor import Tensor
-from core.buffer import Buffer
 from utils.misc import argsort, im2col_indices, col2im_indices
 from typing import Union, Tuple, NamedTuple, Any
 from core.backend.cpu_ops import BinaryOp, UnaryOp, ReduceOp, TransformOp 
@@ -106,21 +105,16 @@ class Pow(Function):
 
     def vjp(self, dout):
         x, y, powxy = self.saved_inputs
-        powxy = Buffer.fromCpu(powxy, device="cpu")
         grad_x, grad_y = None, None
-        if self.saved_inputs[0]:
-            t = Buffer.fromCpu(powxy.binary_op(BinaryOp.Div, x), device="cpu")
+        if self.saved_inputs[0].any():
+            t = powxy.binary_op(BinaryOp.Div, x)
             tmp = y.binary_op(BinaryOp.Mul, t)
-            tmp = Buffer.fromCpu(tmp, device="cpu")
             grad_x = dout.binary_op(BinaryOp.Mul, tmp)
-        if self.saved_inputs[1]:
+        if self.saved_inputs[1].any():
             tmp = x.unary_op(UnaryOp.Log)
-            tmp = Buffer.fromCpu(tmp, device="cpu")
             tmp = tmp.binary_op(BinaryOp.Mul, powxy) 
-            tmp = Buffer.fromCpu(tmp, device="cpu")
             grad_y = dout.binary_op(BinaryOp.Mul, tmp)
         return grad_x, grad_y 
-
 
 #ReduceOp
 class Sum(Function):
@@ -147,7 +141,7 @@ class Max(Function):
         max_index = (x == out_expanded)
         tmp = CpuBuffer.fromCpu(np.array(1.))
         max_index = max_index.binary_op(BinaryOp.Mul, tmp)
-        div = max_index.reduce_op(ReduceOp.Sum, dout.shape)
+        div = max_index.reduce_op(ReduceOp.Sum, 0)
         div = div.transform_op(TransformOp.Expand, x.shape)
         ret = max_index.binary_op(BinaryOp.Div, div)
         return ret 
@@ -242,11 +236,11 @@ class Matmul(Function):
         return x.binary_op(BinaryOp.Matmul, y)
 
     def vjp(self, dout):
-        self.shapex = self.saved_inputs[1].op.arg.shape
-        self.shapey = self.saved_inputs[0].op.arg.shape
-        x_t = self.saved_inputs[1].transform_op(TransformOp.Transpose, self.shapex, True)
+        shapex = self.saved_inputs[1].shape
+        shapey = self.saved_inputs[0].shape
+        x_t = self.saved_inputs[1].transform_op(TransformOp.Transpose)
         x_grad = dout.binary_op(BinaryOp.Matmul, x_t)
-        y_t = self.saved_inputs[0].transform_op(TransformOp.Transpose, self.shapey, True)
+        y_t = self.saved_inputs[0].transform_op(TransformOp.Transpose)
         y_grad = y_t.binary_op(BinaryOp.Matmul, dout)
         return x_grad, y_grad
 

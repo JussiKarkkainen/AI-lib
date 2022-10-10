@@ -1,6 +1,5 @@
 from core.tensor import Tensor
 from utils.misc import change_vars
-import pprint
 import numpy as np
 
 def topological_sort(root):
@@ -34,7 +33,7 @@ def backward(g, root, input_nodes):
             ret[k] = gradients[v]
     else:
         ret = input_nodes if isinstance(input_nodes, list) else list(input_nodes)
-        return [gradients[v] for v in ret]
+        return [gradients[v[0]] if isinstance(v, list) else gradients[v] for v in ret]
     
     del gradients
     return ret
@@ -48,7 +47,8 @@ def unbroadcast_grad(node, grad):
             correct_grad = Tensor.sum(grad, axis=sum_dims)
             ones = tuple([axis for axis, size in enumerate(node.shape) if size == 1])
             if len(ones) != 0:
-                correct_grad = np.sum(correct_grad, axis=axis, keepdims=True)
+                correct_grad = Tensor.sum(correct_grad, axis=ones, keepdims=True)
+                correct_grad = correct_grad.reshape(node.shape)
         else:
             for i, (g, p) in enumerate(zip(grad.shape, node.shape)):
                 if g != p:
@@ -80,6 +80,6 @@ def make_vjp(func, x):
     end_value = func(*x if isinstance(x, tuple) else x)
     assert end_value.shape == (1, 1) or end_value.shape == () or end_value.shape == (1,)
     def vjp(g): 
-        return backward(g, end_value, x)
+        return backward(g, end_value, *x if isinstance(x, tuple) else x)
     return vjp, end_value
      
