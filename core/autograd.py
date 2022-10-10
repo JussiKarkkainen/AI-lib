@@ -68,7 +68,8 @@ def grad(func, argnums=0, return_val=False):
     def gradfun(*args, **kwargs):
         # Replace args with *x
         fun = lambda *x : func(*change_vars(args, argnums, x), **kwargs)
-        vjp, ans = make_vjp(fun, tuple([args[argnums[i]] if isinstance(argnums, tuple) else args[argnums] for i in argnums])) 
+        vjp, ans = make_vjp(fun, tuple([args[([argnums] if isinstance(argnums, int) else argnums)[i]] \
+            for i in ([argnums] if isinstance(argnums, int) else argnums)])) 
         return vjp(Tensor.ones(ans.shape))
     return gradfun
 
