@@ -71,7 +71,11 @@ class Tensor:
     @classmethod
     def zeros(cls, *shape, **kwargs):
         return cls(np.zeros(*shape, dtype=np.float32), **kwargs)
-   
+    
+    @classmethod
+    def ones_like(cls, tensor):
+        return cls(np.ones_like(tensor, dtype=np.float32))
+
     def __neg__(self):
         return self * -1.
     def __sub__(self, x):
@@ -125,16 +129,16 @@ class Tensor:
 
     def add(self, x):
         x = Tensor(x) if not isinstance(x, Tensor) else x
-        x, y = Tensor.broadcast(self, x)
-        return Tensor.Add(x, y)
+        #x, y = Tensor.broadcast(self, x)
+        return Tensor.Add(self, x)
     def mul(self, x):
         x = Tensor(x) if not isinstance(x, Tensor) else x
-        x, y = Tensor.broadcast(self, x)
-        return Tensor.Mul(x, y)
+        #x, y = Tensor.broadcast(self, x)
+        return Tensor.Mul(self, x)
     def pow(self, x):
         x = Tensor(x) if not isinstance(x, Tensor) else x
-        x, y = Tensor.broadcast(self, x)
-        return Tensor.Pow(x, y)
+        #x, y = Tensor.broadcast(self, x)
+        return Tensor.Pow(self, x)
     
     def div(self, x):
         x = Tensor(x) if not isinstance(x, Tensor) else x
@@ -174,10 +178,12 @@ class Tensor:
         return ret if keepdims else ret.reshape(shape=[1] if shape == [] else shape)
     
     def max(self, axis=None, keepdims=False):
+        return Tensor.Max(self, axis=axis, keepdims=keepdims)
         return self._reduce(Tensor.Max, axis=axis, keepdims=keepdims)
     def sum(self, axis=None, keepdims=False):
-        out = self._reduce(Tensor.Sum, axis=axis, keepdims=keepdims)
-        return out
+        return Tensor.Sum(self, axis=axis, keepdims=keepdims)
+        #out = self._reduce(Tensor.Sum, axis=axis, keepdims=keepdims)
+        #return out
 
     def reshape(self, shape):
         return Tensor.Reshape(self, shape=shape)

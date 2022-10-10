@@ -123,18 +123,18 @@ class Pow(Function):
 
 #ReduceOp
 class Sum(Function):
-    def forward(self, x, axis=None):
+    def forward(self, x, axis=None, keepdims=False):
         self.shape = x.shape
-        axis = tuple(1 if i in axis else x.shape[i] for i in range(len(x.shape)))
-        return x.reduce_op(ReduceOp.Sum, axis)
+        #axis = tuple(1 if i in axis else x.shape[i] for i in range(len(x.shape)))
+        return x.reduce_op(ReduceOp.Sum, axis, keepdims=keepdims)
     
     def vjp(self, dout):
         return dout.transform_op(TransformOp.Expand, self.shape)
 
 class Max(Function):
     def forward(self, x, axis=None, keepdims=False):
-        axis = tuple(1 if i in axis else x.shape[i] for i in range(len(x.shape)))
-        out = x.reduce_op(ReduceOp.Max, axis=axis)
+        #axis = tuple(1 if i in axis else x.shape[i] for i in range(len(x.shape)))
+        out = x.reduce_op(ReduceOp.Max, axis=axis, keepdims=keepdims)
         self.save_for_backward(x, out)
         return out
 
@@ -285,11 +285,10 @@ class Corr2d(Function):
         N, C, H, W = x.shape
         self.pad, self.stride = padding, stride
         self.n_K, self.c_K, self.h_K, self.w_K = w.shape
-        self.X_cols = im2col_indices(x.op.arg, self.h_K, self.w_K, padding, stride)
+        self.X_cols = im2col_indices(x, self.h_K, self.w_K, padding, stride)
         W_cols = w.transform_op(TransformOp.Reshape, (self.n_K, -1))
         out_height = int(((H + 2*padding - self.h_K) / stride + 1))
         out_width = int(((W + 2*padding - self.w_K) / stride + 1))
-        #out = W_cols.binary_op(BinaryOp.Matmul, self.X_cols).binary_op(BinaryOp.Add, self.b)
         out = W_cols.binary_op(BinaryOp.Matmul, self.X_cols)
         out = out.reshape((self.n_K, out_height, out_width, N))
         out = out.transform_op(TransformOp.Transpose, (3, 0, 1, 2))

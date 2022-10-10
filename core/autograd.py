@@ -31,7 +31,7 @@ def backward(g, root, input_nodes):
             assert ret[k].shape == gradients[v].shape
             ret[k] = gradients[v]
     else:
-        ret = [input_nodes]
+        ret = input_nodes if isinstance(input_nodes, list) else [input_nodes]
         fin_grads = []
         for v in ret:
             assert v.shape == gradients[v].shape
@@ -40,6 +40,18 @@ def backward(g, root, input_nodes):
     
     del gradients
     return ret
+
+def unbroadcast_grad(node, grad):
+    correct_grad=grad
+    if node.shape != grad.shape:
+        dim_diff = np.abs(grad.ndim - node.ndim)
+        if dim_diff != 0:
+            sum_dims = tuple(range(dim_diff))
+            correct_grad = Tensor.sum(grad, sum_dim)
+            ones = tuple([axis for axis, size in enumerate(node.shape) if size == 1])
+            if len(ones) != 0:
+                correct_grad = Tensor.sum(correct_grad, axis=axis, keepdims=True)
+    return correct_grad
 
 def grad(func, argnums=0, return_val=False):
     '''
