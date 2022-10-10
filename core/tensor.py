@@ -43,6 +43,10 @@ class Tensor:
     def shape(self):
         return np.shape(self.data)
     
+    @property
+    def ndim(self):
+        return self.data.ndim
+
     # detach tensor from graph
     def detach(self):
         return Tensor(self.data)

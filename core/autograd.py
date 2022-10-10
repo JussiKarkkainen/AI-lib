@@ -1,6 +1,7 @@
 from core.tensor import Tensor
 from utils.misc import change_vars
 import pprint
+import numpy as np
 
 def topological_sort(root):
     order, vis = list(), set()
@@ -23,20 +24,17 @@ def backward(g, root, input_nodes):
         grads = [grads] if len(node._graph.parents) == 1 else grads
         grads = [Tensor(g) for g in grads if g is not None]
         for p, g in zip(node._graph.parents, grads):
+            g = unbroadcast_grad(p, g)
+            assert p.shape == g.shape
             gradients[p] = g if gradients.get(p) is None else gradients.get(p)+g
 
     if isinstance(input_nodes, dict): 
         ret = dict(input_nodes)
         for k, v in ret.items():
-            assert ret[k].shape == gradients[v].shape
             ret[k] = gradients[v]
     else:
-        ret = input_nodes if isinstance(input_nodes, list) else [input_nodes]
-        fin_grads = []
-        for v in ret:
-            assert v.shape == gradients[v].shape
-            fin_grads.append(gradients[v])
-            return fin_grads
+        ret = input_nodes if isinstance(input_nodes, list) else list(input_nodes)
+        return [gradients[v] for v in ret]
     
     del gradients
     return ret
@@ -47,10 +45,16 @@ def unbroadcast_grad(node, grad):
         dim_diff = np.abs(grad.ndim - node.ndim)
         if dim_diff != 0:
             sum_dims = tuple(range(dim_diff))
-            correct_grad = Tensor.sum(grad, sum_dim)
+            correct_grad = Tensor.sum(grad, axis=sum_dims)
             ones = tuple([axis for axis, size in enumerate(node.shape) if size == 1])
             if len(ones) != 0:
-                correct_grad = Tensor.sum(correct_grad, axis=axis, keepdims=True)
+                correct_grad = np.sum(correct_grad, axis=axis, keepdims=True)
+        else:
+            for i, (g, p) in enumerate(zip(grad.shape, node.shape)):
+                if g != p:
+                    g_sum = Tensor.sum(grad, axis=i)
+                    # To account for (1,), () and others
+                    correct_grad = g_sum.reshape(p)
     return correct_grad
 
 def grad(func, argnums=0, return_val=False):
@@ -64,7 +68,7 @@ def grad(func, argnums=0, return_val=False):
     def gradfun(*args, **kwargs):
         # Replace args with *x
         fun = lambda *x : func(*change_vars(args, argnums, x), **kwargs)
-        vjp, ans = make_vjp(fun, args[argnums])
+        vjp, ans = make_vjp(fun, tuple([args[argnums[i]] if isinstance(argnums, tuple) else args[argnums] for i in argnums])) 
         return vjp(Tensor.ones(ans.shape))
     return gradfun
 
@@ -72,7 +76,7 @@ def make_vjp(func, x):
     '''
     Construct function for vector-Jacobian product
     '''
-    end_value = func(x)
+    end_value = func(*x if isinstance(x, tuple) else x)
     assert end_value.shape == (1, 1) or end_value.shape == () or end_value.shape == (1,)
     def vjp(g): 
         return backward(g, end_value, x)

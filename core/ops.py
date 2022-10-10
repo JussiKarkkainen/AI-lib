@@ -5,6 +5,7 @@ from core.buffer import Buffer
 from utils.misc import argsort, im2col_indices, col2im_indices
 from typing import Union, Tuple, NamedTuple, Any
 from core.backend.cpu_ops import BinaryOp, UnaryOp, ReduceOp, TransformOp 
+from core.backend.cpu_ops import CpuBuffer
 
 class Function:
     def __init__(self, *tensors, device=None):
@@ -125,11 +126,13 @@ class Pow(Function):
 class Sum(Function):
     def forward(self, x, axis=None, keepdims=False):
         self.shape = x.shape
+        self.x = x
         #axis = tuple(1 if i in axis else x.shape[i] for i in range(len(x.shape)))
         return x.reduce_op(ReduceOp.Sum, axis, keepdims=keepdims)
     
     def vjp(self, dout):
-        return dout.transform_op(TransformOp.Expand, self.shape)
+        return dout.binary_op(BinaryOp.Mul, CpuBuffer.ones_like(self.x))
+        #return dout.transform_op(TransformOp.Expand, self.shape)
 
 class Max(Function):
     def forward(self, x, axis=None, keepdims=False):
