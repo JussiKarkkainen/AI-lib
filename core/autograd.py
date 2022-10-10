@@ -27,8 +27,8 @@ def backward(g, root, input_nodes):
             assert p.shape == g.shape
             gradients[p] = g if gradients.get(p) is None else gradients.get(p)+g
 
-    if isinstance(input_nodes, dict): 
-        ret = dict(input_nodes)
+    if isinstance(input_nodes[0], dict): 
+        ret = dict(input_nodes[0])
         for k, v in ret.items():
             ret[k] = gradients[v]
     else:
@@ -48,12 +48,12 @@ def unbroadcast_grad(node, grad):
             ones = tuple([axis for axis, size in enumerate(node.shape) if size == 1])
             if len(ones) != 0:
                 correct_grad = Tensor.sum(correct_grad, axis=ones, keepdims=True)
+                # To account for (1,), () and others
                 correct_grad = correct_grad.reshape(node.shape)
         else:
             for i, (g, p) in enumerate(zip(grad.shape, node.shape)):
                 if g != p:
                     g_sum = Tensor.sum(grad, axis=i)
-                    # To account for (1,), () and others
                     correct_grad = g_sum.reshape(p)
     return correct_grad
 
@@ -80,6 +80,6 @@ def make_vjp(func, x):
     end_value = func(*x if isinstance(x, tuple) else x)
     assert end_value.shape == (1, 1) or end_value.shape == () or end_value.shape == (1,)
     def vjp(g): 
-        return backward(g, end_value, *x if isinstance(x, tuple) else x)
+        return backward(g, end_value, x)
     return vjp, end_value
      

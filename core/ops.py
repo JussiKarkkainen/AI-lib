@@ -295,7 +295,8 @@ class Corr2d(Function):
         x, w = self.saved_inputs[0], self.saved_inputs[1]
         dout_T = dout.transform_op(TransformOp.Transpose, (1, 2, 3, 0))
         dout_reshape = dout_T.transform_op(TransformOp.Reshape, (self.n_K, -1))
-        w_grad = dout_reshape.binary_op(BinaryOp.Matmul, (Buffer.fromCpu(self.X_cols, device="cpu").transform_op(TransformOp.Transpose, None)))
+        self.X_cols = CpuBuffer.fromCpu(self.X_cols)
+        w_grad = dout_reshape.binary_op(BinaryOp.Matmul, (self.X_cols.transform_op(TransformOp.Transpose, None)))
         w_grad = w_grad.reshape(w.shape)
         w_reshape = w.transform_op(TransformOp.Reshape, (self.n_K, -1))
         x_grad_col = w_reshape.transform_op(TransformOp.Transpose, None).binary_op(BinaryOp.Matmul, dout_reshape)
