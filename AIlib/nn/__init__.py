@@ -30,7 +30,8 @@ class CrossEntropyLoss:
         self.reduction = reduction
 
     def __call__(self, y_hat, y):
-        out = y_hat.cross_entropy(y)
+        #out = y_hat.cross_entropy(y)
+        out = -Tensor.sum(y*Tensor.logsoftmax(y_hat), axis=-1)
         if self.reduction == "none":
             return out
         if self.reduction == "mean":
