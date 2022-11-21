@@ -66,7 +66,7 @@ def main():
         state = update(state.params, X, y)
 ```
 Output of trained network:
-![output](examples/Figure_1.png)
+<img src="examples/Figure_1.png" width="200">
 
 ## Note:
 AIlib still struggles with some numerical instability when training larger networks
