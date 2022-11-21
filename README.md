@@ -65,8 +65,7 @@ def main():
     for epoch in range(1000):
         state = update(state.params, X, y)
 ```
-Output of trained network:
-<img src="examples/Figure_1.png" width="200">
+<img src="examples/Figure_1.png" width="400" title="Output of trained model">
 
 ## Note:
 AIlib still struggles with some numerical instability when training larger networks
