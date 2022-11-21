@@ -3,7 +3,7 @@ import collections
 import functools
 import contextlib
 import dataclasses
-from core.tensor import Tensor
+from AIlib.tensor import Tensor
 from typing import NamedTuple, List, Dict, Optional, Any, DefaultDict
 import collections 
 
@@ -35,7 +35,7 @@ def get_param(name, shape):
     param_path = frame.create_param_path(name)
     if frame.is_init:
         if name == "w":
-            frame.params[param_path] = Tensor.randn(*shape)
+            frame.params[param_path] = Tensor.normal(0, 1, *shape)
         elif name == "b":
             frame.params[param_path] = Tensor.zeros(*shape)
     

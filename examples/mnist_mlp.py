@@ -1,14 +1,14 @@
 import numpy as np
-from core.nn.utils import one_hot
-from core.tensor import Tensor
-from core.autograd import grad
-import core.nn as nn
-from core.transform import transform
-import core.nn.optim as optim
+from AIlib.nn.utils import one_hot
+from AIlib.tensor import Tensor
+from AIlib.autograd import grad
+import AIlib.nn as nn
+from AIlib.transform import transform
+import AIlib.nn.optim as optim
 import matplotlib.pyplot as plt
 import torch
 from torchvision import datasets, transforms
-from core.nn.module import wrap_method
+from AIlib.nn.module import wrap_method
 
 def load_dataset():
     transformn = transforms.Compose(
@@ -36,9 +36,9 @@ class MLP(nn.Module):
     
     @wrap_method
     def __call__(self, x):
-        h1 = self.w1(x).relu()
-        h2 = self.w2(h1).relu()
-        out = self.out(h2)
+        out = self.w1(x).tanh()
+        out = self.w2(out).tanh()
+        out = self.out(out)
         return out
 
 def net_fn(x):
@@ -49,38 +49,38 @@ lossfn = nn.CrossEntropyLoss()
 
 def main():
     network = transform(net_fn)
-    optimizer = optim.sgd()
+    optimizer = optim.sgd(0.001)
     
     def loss(params, X, y):
         out = network.apply(params, X)
-        out = lossfn(out, y)
-        return out
+        loss = lossfn(out, y)
+        return loss
 
-    def update(state, X, y):
-        grads = grad(loss)(state.params, X, y)
-        print(grads)
+    def update(params, X, y):
+        grads = grad(loss)(params, X, y)
         params, opt_state = optimizer.update(grads, state.opt_state)
-        #params = optim.apply_updates(state.params, updates)
         return nn.TrainingState(params, opt_state)
    
     def evaluate(params, X, y):
-        out = network.apply(params, X, y)
-        predictions = np.argmax(out, axis=-1)
-        return Tensor.mean(predictions == y)
+        y = Tensor(y)
+        out = network.apply(params, X)
+        predictions = Tensor(np.argmax(out, axis=-1).astype(np.float32))
+        true = Tensor(np.array(predictions == y).astype(np.float32))
+        return Tensor.mean(true)
 
     train_loader, x_init, y_init = load_dataset()
     init_params = network.init(x_init.flatten())
     init_opt_state = optimizer.init(init_params)
     state = nn.TrainingState(params=init_params, opt_state=init_opt_state)
 
-    for epoch in range(10):
+    for epoch in range(5):
         for X, y in train_loader:
-            X = Tensor(np.array(X)).flatten()
-            y = Tensor(np.array(y))
-            state = update(state, X, y)
+            X = Tensor(np.array(X)).flatten().detach()
+            y = np.array(y)
+            state = update(state.params, X, y)
 
         accuracy = evaluate(state.params, X, y)
-        print(f"epoch: {epoch}, accuracy: {accuracy:.3f}")
+        print(f"epoch: {epoch}, accuracy: {accuracy}")
 
 
 if __name__ == "__main__":

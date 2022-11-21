@@ -3,8 +3,7 @@ from typing import Optional
 import inspect, importlib, pyclbr
 import functools
 import math
-#from core.buffer import Buffer, Device
-from core.backend.cpu_ops import CpuBuffer
+from AIlib.backend.cpu_ops import CpuBuffer
 
 class Tensor:
     def __init__(self, data):
@@ -22,15 +21,13 @@ class Tensor:
             self.data = np.array(data, dtype=np.float32)
         else:
             raise Exception(f"Unable to make tensor from {type(data)}")
-        if isinstance(self.data, np.ndarray):
-            self.bufferdata = CpuBuffer.fromCpu(self.data.astype(np.float32))
-
+        self.bufferdata = CpuBuffer.fromCpu(self.data)
         self._graph = None 
 
     def __repr__(self):
         return f"<Tensor {self.data} with shape: {self.shape}>"
         
-    def __getitem__(self, val): 
+    def __getitem__(self, key): 
         return self.data[key]
     def __setitem__(self, key, value):
         self.data[key] = value
@@ -69,6 +66,10 @@ class Tensor:
         return cls(np.random.rand(*shape).astype(np.float32), **kwargs)
 
     @classmethod
+    def normal(cls, mean, std, *shape, **kwargs):
+        return cls(np.random.normal(mean, std, shape).astype(np.float32), **kwargs)
+
+    @classmethod
     def randn(cls, *shape, **kwargs):
         return cls(np.random.randn(*shape).astype(np.float32), **kwargs)
     
@@ -88,9 +89,16 @@ class Tensor:
         return self + (-x)
     def tanh(self):
         return 2. * ((2. * self).sigmoid()) - 1.
-        #return ((2*self).exp() - 1) / ((2*self).exp() + 1)
     def sigmoid(self):
-        return (1. + (-self).exp()) ** -1.
+        # Numerically stable sigmoid, taken from cs231n
+        pos_mask = (self.data >= 0)
+        neg_mask = (self.data < 0)
+        z = Tensor.zeros(self.shape)
+        z.data[pos_mask] = Tensor.exp(Tensor(-self.data[pos_mask])).data
+        z.data[neg_mask] = Tensor.exp(Tensor(self.data[neg_mask])).data
+        top = Tensor.ones(self.shape)
+        top[neg_mask] = z[neg_mask]
+        return Tensor(top / (1 + z))
     def sqrt(self):
         return self.pow(0.5)
     def mean(self, axis=None, keepdim=False):
@@ -108,7 +116,7 @@ class Tensor:
         return f - s.log()
     
     def cross_entropy(self, target):
-        return Tensor.CrossEntropy(self, target)
+        return Tensor.CrossEntropy(self, Tensor(target))
 
     def flatten(self, start_dim=1, end_dim=-1):
         flat_axis = list(self.shape[start_dim:end_dim])
@@ -122,26 +130,17 @@ class Tensor:
         return Tensor.Exp(self)
     def log(self):
         return Tensor.Log(self)
-    
-    @staticmethod
-    def broadcast(x, y):
-        tt = [arg for arg in [x,y] if isinstance(arg, Tensor)][0]  # this is the prototype tensor
-        x,y = [Tensor([t]) if not isinstance(t, Tensor) else t for t in [x,y]]
-        x,y = [t.reshape([1]*(max(len(x.shape), len(y.shape))-len(t.shape)) + list(t.shape)) for t in [x,y]]
-        shape_ret = tuple(max(sx, sy) for sx,sy in zip(x.shape, y.shape))
-        return x.expand(shape_ret), y.expand(shape_ret)
+    def sigmoid(self):
+        return Tensor.Sigmoid(self)
 
     def add(self, x):
         x = Tensor(x) if not isinstance(x, Tensor) else x
-        #x, y = Tensor.broadcast(self, x)
         return Tensor.Add(self, x)
     def mul(self, x):
         x = Tensor(x) if not isinstance(x, Tensor) else x
-        #x, y = Tensor.broadcast(self, x)
         return Tensor.Mul(self, x)
     def pow(self, x):
         x = Tensor(x) if not isinstance(x, Tensor) else x
-        #x, y = Tensor.broadcast(self, x)
         return Tensor.Pow(self, x)
     
     def div(self, x):
@@ -171,23 +170,10 @@ class Tensor:
         w = w._reshape_conv()
         return Tensor.Corr2d(self, w, padding=padding, stride=stride)
     
-    def _reduce(self, fxn, axis=None, keepdims=False):
-        if axis is None:
-            axis = range(len(self.shape))
-        if isinstance(axis, int):
-            axis = [axis]
-        axis = tuple([x if x >= 0 else x+len(self.shape) for x in axis])
-        shape = [self.shape[i] for i in range(len(self.shape)) if i not in axis]
-        ret = fxn(self, axis=axis)
-        return ret if keepdims else ret.reshape(shape=[1] if shape == [] else shape)
-    
     def max(self, axis=None, keepdims=False):
         return Tensor.Max(self, axis=axis, keepdims=keepdims)
-        return self._reduce(Tensor.Max, axis=axis, keepdims=keepdims)
     def sum(self, axis=None, keepdims=False):
         return Tensor.Sum(self, axis=axis, keepdims=keepdims)
-        #out = self._reduce(Tensor.Sum, axis=axis, keepdims=keepdims)
-        #return out
 
     def reshape(self, shape):
         return Tensor.Reshape(self, shape=shape)
@@ -200,7 +186,7 @@ def register(name, function):
     def attach(*x, **kwargs):
         return function.execute(*x, **kwargs)
     setattr(Tensor, name, attach) 
-for name, cls in inspect.getmembers(importlib.import_module("core.ops"), inspect.isclass):
+for name, cls in inspect.getmembers(importlib.import_module("AIlib.ops"), inspect.isclass):
     if name not in ["Function", "Enum", "Buffer", "Tensor"] and not name.endswith("Op"):
         register(name, cls)
 

@@ -1,22 +1,22 @@
 import numpy as np
-from core.tensor import Tensor
-from core.autograd import grad
-import core.nn as nn
-from core.transform import transform
-import core.nn.optim as optim
+from AIlib.tensor import Tensor
+from AIlib.autograd import grad
+import AIlib.nn as nn
+from AIlib.transform import transform
+import AIlib.nn.optim as optim
 import matplotlib.pyplot as plt
-from core.nn.module import wrap_method
+from AIlib.nn.module import wrap_method
 
-Xs = np.linspace(-2., 2., num=128)[:, None]
+Xs = np.linspace(-3., 3., num=256)[:, None]
 X = Tensor(Xs)
-y = Tensor(Xs ** 2)
-xy = Xs ** 2
+y = Tensor(np.sin(Xs))
+xy = np.sin(Xs)
 
 class Net(nn.Module):
     def __init__(self):
         super().__init__()
-        self.l1 = nn.Linear(128)
-        self.l2 = nn.Linear(128)
+        self.l1 = nn.Linear(256)
+        self.l2 = nn.Linear(256)
         self.l3 = nn.Linear(1)
     
     @wrap_method
@@ -44,11 +44,6 @@ def main():
         params, opt_state = optimizer.update(grads, state.opt_state)
         return nn.TrainingState(params, opt_state)
 
-    def evaluate(params, X, y):
-        out = network.apply(params, X)
-        predictions = np.argmax(out, axis=-1)
-        return Tensor.mean(predictions == y)
-    
     init_params = network.init(X)
     init_opt_state = optimizer.init(init_params)
     state = nn.TrainingState(params=init_params, opt_state=init_opt_state)

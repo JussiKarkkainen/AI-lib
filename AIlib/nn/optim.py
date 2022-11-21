@@ -1,6 +1,6 @@
-from core.tensor import Tensor
+from AIlib.tensor import Tensor
 from typing import NamedTuple, Any, Callable
-import core.nn as nn
+import AIlib.nn as nn
 
 class OptState(NamedTuple):
     params: Any

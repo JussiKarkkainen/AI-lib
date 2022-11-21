@@ -15,7 +15,7 @@ UnaryOpDict = {'ReLU': lambda x: np.maximum(x, 0), 'Sign': lambda x: np.sign(x),
 
 BinaryOpDict = {'Add': lambda x, y: np.add(x, y), 'Mul': lambda x, y: np.multiply(x, y),
         'Div': lambda x, y: np.divide(x, y), 'Pow': lambda x, y: np.power(x, y), 
-        'Sub': lambda x, y: np.substract(x, y), 'Matmul': lambda x, y: np.matmul(x, y)}
+        'Sub': lambda x, y: np.subtract(x, y), 'Matmul': lambda x, y: np.matmul(x, y)}
 
 TransformOpDict = {'Reshape': lambda x, arg: np.reshape(x, arg), 
         'Transpose': lambda x, arg: np.transpose(x, arg), 'Expand': lambda x, arg: np.broadcast_to(x, arg),

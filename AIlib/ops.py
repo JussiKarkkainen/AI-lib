@@ -1,10 +1,10 @@
 from enum import Enum
 import numpy as np
-from core.tensor import Tensor
+from AIlib.tensor import Tensor
 from utils.misc import argsort, im2col_indices, col2im_indices
 from typing import Union, Tuple, NamedTuple, Any
-from core.backend.cpu_ops import BinaryOp, UnaryOp, ReduceOp, TransformOp 
-from core.backend.cpu_ops import CpuBuffer
+from AIlib.backend.cpu_ops import BinaryOp, UnaryOp, ReduceOp, TransformOp 
+from AIlib.backend.cpu_ops import CpuBuffer
 
 class Function:
     def __init__(self, *tensors, device=None):
@@ -57,6 +57,22 @@ class Log(Function):
         x = self.saved_inputs[0]
         return dout.binary_op(BinaryOp.Div, x)
 
+class Sigmoid(Function):
+    def forward(self, x):
+        self.save_for_backward(x)
+        pos_mask = (x >= 0)
+        neg_mask = (x < 0)
+        z = CpuBuffer.fromCpu(np.zeros_like(x))
+        z[pos_mask] = (-x[pos_mask]).unary_op(UnaryOp.Exp)
+        z[neg_mask] = (x[neg_mask]).unary_op(UnaryOp.Exp)
+        top = CpuBuffer.fromCpu(np.ones_like(x))
+        top[neg_mask] = z[neg_mask]
+        return top / (1 + z)
+
+    def vjp(self, dout):
+        x = self.saved_inputs[0]
+        return dout.binary_op(BinaryOp.Mul, (self.forward(x) * (1 - self.forward(x))))        
+
 # BinaryOp
 class Add(Function):
     def forward(self, x, y):
@@ -92,7 +108,7 @@ class Div(Function):
         a = self.saved_inputs[0]
         y_grad = dout.binary_op(BinaryOp.Div, b) 
         tmp = dout.binary_op(BinaryOp.Mul, a)
-        tmp1 = Buffer.fromCpu(np.array(2.), device="cpu")
+        tmp1 = CpuBuffer.fromCpu(np.array(2.), device="cpu")
         tmp2 = b.binary_op(BinaryOp.Pow, tmp1)
         x_grad = tmp.binary_op(BinaryOp.Div, tmp2) 
         return y_grad, x_grad
@@ -121,7 +137,6 @@ class Sum(Function):
     def forward(self, x, axis=None, keepdims=False):
         self.shape = x.shape
         self.x = x
-        #axis = tuple(1 if i in axis else x.shape[i] for i in range(len(x.shape)))
         return x.reduce_op(ReduceOp.Sum, axis, keepdims=keepdims)
     
     def vjp(self, dout):
@@ -130,7 +145,6 @@ class Sum(Function):
 
 class Max(Function):
     def forward(self, x, axis=None, keepdims=False):
-        #axis = tuple(1 if i in axis else x.shape[i] for i in range(len(x.shape)))
         out = x.reduce_op(ReduceOp.Max, axis=axis, keepdims=keepdims)
         self.save_for_backward(x, out)
         return out
@@ -171,64 +185,6 @@ class Expand(Function):
     def vjp(self, dout):
         a = dout.reduce_op(ReduceOp.Sum, self.new_shape)
         return dout.reduce_op(ReduceOp.Sum, self.new_shape)
-
-# Loss is implemented here because slicing breaks the computational graph and therefore the
-# gradients would be wrong.
-# TODO: This is very ugly, fix later
-class CrossEntropy(Function):
-    def forward(self, x, y):
-        # logsoftmax
-        axis = len(x.shape)-1
-        axis = [axis]
-        axis = tuple(1 if i in axis else x.shape[i] for i in range(len(x.shape)))
-        norm = x.reduce_op(ReduceOp.Max, axis=axis)
-        norm = Buffer.fromCpu(norm, device="cpu")
-        norm = norm.binary_op(BinaryOp.Mul, Buffer.fromCpu(np.array(-1.), device="cpu"))
-        norm = Buffer.fromCpu(norm, device="cpu")
-        f = x.binary_op(BinaryOp.Add, norm) 
-        f = Buffer.fromCpu(f, device="cpu")
-        x = f.unary_op(UnaryOp.Exp)
-        x = Buffer.fromCpu(x, device="cpu")
-        x = x.reduce_op(ReduceOp.Sum, axis=axis) 
-        S = Buffer.fromCpu(x, device="cpu")
-        tmp = Buffer.fromCpu(S.unary_op(UnaryOp.Log), device="cpu").binary_op(BinaryOp.Mul, Buffer.fromCpu(np.array(-1.), device="cpu"))
-        x = f.binary_op(BinaryOp.Add, Buffer.fromCpu(tmp, device="cpu"))
-        # NLLLoss
-        x = Buffer.fromCpu(x, device="cpu")
-        one = Buffer.fromCpu(np.array(-1.), device="cpu")
-        labels = np.array(y.op.arg).astype(np.int32)
-        s = x.op.arg[range(y.shape[0]), labels]
-        s = Buffer.fromCpu(s, device="cpu")
-        self.save_for_backward(x, y, labels, s)
-        return one.binary_op(BinaryOp.Mul, s) 
-    
-    def vjp(self, dout):
-        x = self.saved_inputs[0]
-        y = self.saved_inputs[1]
-        labels = np.array(y.op.arg).astype(np.int32)
-        neg_one = Buffer.fromCpu(np.array(-1.), device="cpu")
-        axis = (1,)
-        axis = tuple(1 if i in axis else x.shape[i] for i in range(len(x.shape)))
-        norm = x.reduce_op(ReduceOp.Max, axis=axis)
-        norm = Buffer.fromCpu(norm, device="cpu")
-        norm = norm.binary_op(BinaryOp.Mul, Buffer.fromCpu(np.array(-1.), device="cpu"))
-        norm = Buffer.fromCpu(norm, device="cpu")
-        f = x.binary_op(BinaryOp.Add, norm) 
-        f = Buffer.fromCpu(f, device="cpu")
-        x = f.unary_op(UnaryOp.Exp)
-        e = Buffer.fromCpu(x, device="cpu")
-        x = e.reduce_op(ReduceOp.Sum, axis=axis) 
-        S = Buffer.fromCpu(x, device="cpu")
-        softmax = e.binary_op(BinaryOp.Div, S)
-        m = y.shape[0]
-        grad = Buffer.fromCpu(softmax, device="cpu")
-        sli = Buffer.fromCpu(grad.op.arg[range(m), labels], device="cpu")
-        grad.op.arg[range(m), labels] = sli.binary_op(BinaryOp.Add, neg_one)
-        m = Buffer.fromCpu(np.array(m), device="cpu")
-        grad = grad.binary_op(BinaryOp.Div, m)
-        # Dont't need to mul with dout because this will always be the second to last node in comp
-        # graph which means dout will always be one
-        return grad, None
 
 class Matmul(Function):
     def forward(self, x, y):
@@ -301,5 +257,25 @@ class Corr2d(Function):
         w_reshape = w.transform_op(TransformOp.Reshape, (self.n_K, -1))
         x_grad_col = w_reshape.transform_op(TransformOp.Transpose, None).binary_op(BinaryOp.Matmul, dout_reshape)
         x_grad = col2im_indices(x_grad_col, x.shape, self.h_K, self.w_K, padding=self.pad, stride=self.stride)
-        #b_grad = dout.unary_op(UnaryOp.Sum, axis=(0, 2, 3))
         return x_grad, w_grad
+
+
+class CrossEntropy(Function):
+    def forward(self, x, target):
+        logits_max = x.reduce_op(ReduceOp.Max, axis=1, keepdims=True)
+        sub = x.binary_op(BinaryOp.Sub, logits_max)
+        exp = sub.unary_op(UnaryOp.Exp)
+        softmax = exp.binary_op(BinaryOp.Div, exp.reduce_op(ReduceOp.Sum, axis=1, keepdims=True))
+        one = CpuBuffer.fromCpu(np.array(-1.))
+        norm = CpuBuffer.fromCpu(np.array(1e-7))
+        a = softmax.binary_op(BinaryOp.Add, norm).unary_op(UnaryOp.Log)
+        target = target.reshape(-1, 1)
+        mean = np.mean(target * softmax.binary_op(BinaryOp.Add, norm).unary_op(UnaryOp.Log))
+        self.save_for_backward(target, softmax)
+        return one.binary_op(BinaryOp.Mul, mean)
+    
+    def vjp(self, dout):
+        target, softmax = self.saved_inputs[0], self.saved_inputs[1]
+        out = softmax.binary_op(BinaryOp.Sub, target)
+        out = dout.binary_op(BinaryOp.Mul, out)
+        return dout.binary_op(BinaryOp.Mul, out), None

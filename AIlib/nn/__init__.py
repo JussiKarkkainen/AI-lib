@@ -1,11 +1,11 @@
-from core.tensor import Tensor
+from AIlib.tensor import Tensor
 from collections import OrderedDict
 from typing import NamedTuple, Any
 import warnings
 import numpy as np
-from core.transform import get_param
-from core.nn.module import Module, wrap_method
-import core.nn.optim
+from AIlib.transform import get_param
+from AIlib.nn.module import Module, wrap_method
+import AIlib.nn.optim as optim
 
 class TrainingState(NamedTuple):
     params: Any
@@ -75,7 +75,8 @@ class Conv2d(Module):
         self.bias = bias
 
     def forward(self, x):
-       pass 
+       ret = x.conv2d(w, b, padding, stride)
+       return ret
 
 '''
 class Conv2d(Module):
@@ -102,3 +103,20 @@ class MaxPool2d(Module):
 
     def forward(self, x):
         return x.maxpool2d(self.kernel_size, self.stride)
+
+
+class ScaledDotProductAttention(Module):
+    def __init__(self, embed_dim, num_heads, dropout):
+        super().__init__()
+        pass
+
+    def __call__(self, q, k, v, mask=None):
+        pass
+
+class MultiHeadAttention(Module):
+    def __init__(self, embed_dim, num_heads, dropout):
+        super().__init__()
+        pass
+
+    def __call__(self, q, k, v):
+        pass

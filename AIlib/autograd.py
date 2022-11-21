@@ -1,4 +1,4 @@
-from core.tensor import Tensor
+from AIlib.tensor import Tensor
 from utils.misc import change_vars
 import numpy as np
 
