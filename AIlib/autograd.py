@@ -57,7 +57,7 @@ def unbroadcast_grad(node, grad):
                     correct_grad = g_sum.reshape(p)
     return correct_grad
 
-def grad(func, argnums=0, return_val=False):
+def grad(func, argnums=0):
     '''
     Constuct the gradient function that returns the gradient of 
     the given function w.r.t inputs
@@ -70,7 +70,7 @@ def grad(func, argnums=0, return_val=False):
         fun = lambda *x : func(*change_vars(args, argnums, x), **kwargs)
         vjp, ans = make_vjp(fun, tuple([args[([argnums] if isinstance(argnums, int) else argnums)[i]] \
             for i in ([argnums] if isinstance(argnums, int) else argnums)])) 
-        return vjp(Tensor.ones(ans.shape))
+        return vjp(Tensor.ones(ans.shape)), ans
     return gradfun
 
 def make_vjp(func, x):
