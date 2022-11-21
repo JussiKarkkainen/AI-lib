@@ -66,7 +66,7 @@ def main():
         state = update(state.params, X, y)
 ```
 Output of the trained model:
-<br><br>
+<br>
 <img src="examples/Figure_1.png" width="400">
 <br><br>
 
