@@ -54,7 +54,8 @@ def unbroadcast_grad(node, grad):
             for i, (g, p) in enumerate(zip(grad.shape, node.shape)):
                 if g != p:
                     g_sum = Tensor.sum(grad, axis=i)
-                    correct_grad = g_sum.reshape(p)
+                    correct_grad = g_sum.reshape(node.shape)
+            assert node.ndim == correct_grad.ndim
     return correct_grad
 
 def grad(func, argnums=0):

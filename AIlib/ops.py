@@ -55,7 +55,7 @@ class Log(Function):
 
     def vjp(self, dout):
         x = self.saved_inputs[0]
-        return dout.binary_op(BinaryOp.Div, x)
+        return dout.binary_op(BinaryOp.Div, x.binary_op(BinaryOp.Add, 1e-16))
 
 class Sigmoid(Function):
     def forward(self, x):
@@ -123,7 +123,7 @@ class Pow(Function):
         x, y, powxy = self.saved_inputs
         grad_x, grad_y = None, None
         if self.saved_inputs[0].any():
-            t = powxy.binary_op(BinaryOp.Div, x)
+            t = powxy.binary_op(BinaryOp.Div, x.binary_op(BinaryOp.Add, 1e-16))
             tmp = y.binary_op(BinaryOp.Mul, t)
             grad_x = dout.binary_op(BinaryOp.Mul, tmp)
         if self.saved_inputs[1].any():
@@ -140,6 +140,7 @@ class Sum(Function):
         return x.reduce_op(ReduceOp.Sum, axis, keepdims=keepdims)
     
     def vjp(self, dout):
+        if dout.ndim == 1: dout = dout.transform_op(TransformOp.Reshape, (dout.shape[0], 1))
         return dout.binary_op(BinaryOp.Mul, CpuBuffer.ones_like(self.x))
         #return dout.transform_op(TransformOp.Expand, self.shape)
 
@@ -157,7 +158,7 @@ class Max(Function):
         max_index = max_index.binary_op(BinaryOp.Mul, tmp)
         div = max_index.reduce_op(ReduceOp.Sum, 0)
         div = div.transform_op(TransformOp.Expand, x.shape)
-        ret = max_index.binary_op(BinaryOp.Div, div)
+        ret = max_index.binary_op(BinaryOp.Div, div.binary_op(BinaryOp.Add, 1e-16))
         return ret 
 
 #TransformOp

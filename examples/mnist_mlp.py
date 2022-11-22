@@ -45,7 +45,7 @@ def net_fn(x):
     net = MLP()
     return net(x)
 
-lossfn = nn.CrossEntropyLoss()
+lossfn = nn.CategoricalCrossEntropyLoss()
 
 def main():
     network = transform(net_fn)
@@ -71,7 +71,7 @@ def main():
         epoch_loss = 0
         for X, y in train_loader:
             X = Tensor(np.array(X)).flatten().detach()
-            y = np.array(y)
+            y = Tensor(one_hot(y, 10)).detach()
             state, loss = update(state.params, X, y)
             epoch_loss += loss
         

@@ -24,8 +24,7 @@ class MSELoss:
         elif self.reduction == "sum":
             return out.sum()
 
-# Sparse categorical cross entropy
-class CrossEntropyLoss:
+class CategoricalCrossEntropyLoss:
     def __init__(self, reduction="mean"):    
         self.reduction = reduction
 
@@ -34,7 +33,7 @@ class CrossEntropyLoss:
         out = -Tensor.sum(y*Tensor.logsoftmax(y_hat), axis=-1)
         if self.reduction == "none":
             return out
-        if self.reduction == "mean":
+        elif self.reduction == "mean":
             return out.mean()
         elif self.reduction == "sum":
             return out.sum()
