@@ -123,6 +123,9 @@ class Tensor:
         flat_axis.append(self.shape[end_dim])
         flat_shape = (functools.reduce(lambda x, y : x*y, flat_axis))
         return Tensor.reshape(self, (self.shape[0], flat_shape))
+
+    def sequential(self, l): 
+        return functools.reduce(lambda x, f: f(x), l, self)
     
     def relu(self):
         return Tensor.ReLU(self)

@@ -27,13 +27,13 @@ def load_dataset():
 
 
 class ResNetBlock(nn.Module):
-    def __init__(self, use_1x1_conv):
+    def __init__(self, out_channels, stride=1, use_1x1_conv=False):
         super().__init__()
-        self.conv1 = nn.Conv2d(out_channels=3, kernel_size=3, stride=1, padding=1)
+        self.conv1 = nn.Conv2d(out_channels=out_channels, kernel_size=3, stride=stride, padding=1)
         self.bn1 = nn.BatchNorm2d()
-        self.conv2 = nn.Conv2d(out_channels=3, kernel_size=3, stride=1, padding=1)
+        self.conv2 = nn.Conv2d(out_channels=our_channels, kernel_size=3, stride=stride, padding=1)
         if use_1x1_conv:
-            self.conv3 = nn.Conv2d(out_channels=3, kernel_size=1, stride=1)
+            self.conv3 = nn.Conv2d(out_channels=out_channels, kernel_size=1, stride=stride)
         else:
             self.conv3 = None
         self.bn2 = nn.BatchNorm2d()
@@ -49,11 +49,34 @@ class ResNetBlock(nn.Module):
 class ResNet(nn.Module):
     def __init__(self):
         super().__init__()
-        pass
+        self.conv1 = nn.Conv2d(out_channels=64, kernel_size=7, stride=2)
+        self.bn1 = nn.BatchNorm2d()
+        self.l1 = self._make_layer(64, 2, first_layer=True)
+        self.l2 = self._make_layer(128, 2)
+        self.l3 = self._make_layer(256, 2)
+        self.l4 = self._make_layer(512, 2)
+        self.avgpool = nn.AvgPool2d()
+        self.fc = nn.Linear(10)
+    
+    def _make_layer(self, channels, num_blocks, first_layer=False):
+        layers = []
+        for b in range(num_blocks):
+            if b == 0 and not first_layer:
+                layers.append(ResNetBlock(channels, stride=2, use_1x1_conv=True)
+            else:
+            layers.append(ResNetBlock(channels))
+        return layers
 
     @wrap_method
     def __call__(self, x):
-        pass
+        out = self.bn1(self.conv1(x)).relu()
+        out = out.sequential(self.l1)
+        out = out.sequential(self.l2)
+        out = out.sequential(self.l3)
+        out = out.sequential(self.l4)
+        out = self.avgpool(out)
+        out = self.fc(out)
+        return out
 
 def net_fn(x):
     return ResNet()(x)
