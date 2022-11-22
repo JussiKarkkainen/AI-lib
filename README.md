@@ -2,7 +2,7 @@
 
 AIlib  is a minimal deep learning library capable of handling reverse mode automatic 
 differentiation. Despite its small size, it can be used to train more complicated Neural 
-Networks such as CNNs.
+Networks such as CNNs ```examples/resnet.py``` and transformers ```examples/transformer.py```
 
 
 ## Usage
@@ -18,8 +18,15 @@ where Neural Networks are defined in an object oriented manner, but are then tra
 pure functions with ```transform()```
 Below is an implementation of a simple Multilayered Perceptron trained on a toy dataset.
 See ```examples/``` for more
-```
-## Imports omitted -> see examples/simple_mlp.py for full code ##
+
+```python
+import numpy as np
+from AIlib.tensor import Tensor
+from AIlib.autograd import grad
+import AIlib.nn as nn
+from AIlib.transform import transform
+import matplotlib.pyplot as plt
+from AIlib.nn.module import wrap_method
 
 Xs = np.linspace(-3., 3., num=256)[:, None]
 X = Tensor(Xs)
