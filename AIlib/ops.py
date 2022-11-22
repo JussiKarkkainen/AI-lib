@@ -201,10 +201,9 @@ class Matmul(Function):
         y_grad = y_t.binary_op(BinaryOp.Matmul, dout)
         return x_grad, y_grad
 
-class Pool2d(Function):
-    def forward(self, x, kernel_size, stride, padding, pooltype):
+class MaxPool2d(Function):
+    def forward(self, x, kernel_size, stride, padding):
         self.x = x
-        self.pooltype = pooltype
         N, C, H, W = x.shape
         assert kernel_size == stride, "Invalid parameters"
         assert H % kernel_size == 0
@@ -228,6 +227,20 @@ class Pool2d(Function):
         dx_reshaped /= np.sum(mask, axis=(3, 5), keepdims=True)
         dx = dx_reshaped.reshape(self.x.shape)
         return dx
+
+class AvgPool2d(Function):
+    def forward(self, x, kernel_size, stride, padding):
+        self.x = x
+        N, C, H, W = x.shape
+        assert kernel_size == stride, "Invalid parameters"
+        assert H % kernel_size == 0
+        assert W % kernel_size == 0 
+        self.x_reshape = x.transform_op(TransformOp.Reshape,
+                    (N, C, H // kernel_size, kernel_size, W // kernel_size, kernel_size))
+        
+
+    def backward(self, dout):
+        pass
 
 class Corr2d(Function):
     def forward(self, x, w, padding, stride):
@@ -278,5 +291,3 @@ class CrossEntropy(Function):
     def vjp(self, dout):
         target, softmax = self.saved_inputs[0], self.saved_inputs[1]
         out = softmax.binary_op(BinaryOp.Sub, target)
-        out = dout.binary_op(BinaryOp.Mul, out)
-        return dout.binary_op(BinaryOp.Mul, out), None

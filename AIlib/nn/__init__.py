@@ -73,37 +73,48 @@ class Conv2d(Module):
         self.stride = stride
         self.padding = padding
         self.bias = bias
+    
+    @wrap_method
+    def forward(self, x):
+        # Input of shape: DxCxHxW
+        # Kernel is of shape: NKxCxHKxWK
+        w_shape = ((self.out_channels, x.shape[1], self.kernel_size, self.kernel_size))
+        b_shape = (self.out_channels, 1) 
+        w = get_param("w", w_shape)
+        b = get_param("b", b_shape)
+        if bias:
+            ret = x.conv2d(w, self.padding, self.stride) + b
+        else:
+            ret = x.conv2d(w, self.padding, self.stride)
+        return ret
+
+class BatchNorm2d(Module):
+    def __init__(self):
+        super().__init__()
+        pass
 
     def forward(self, x):
-       ret = x.conv2d(w, b, padding, stride)
-       return ret
+        return x.batchnorm2d()
 
-'''
-class Conv2d(Module):
-    def __init__(self, in_channels, out_channels, kernel_size, stride=1, padding=0, bias=True):
+class AvgPool2d(Module):
+    def __init__(self, kernel_size=2, stride=2, padding=0):
         super().__init__()
-        self.in_channels = in_channels
-        self.out_channels = out_channels
         self.kernel_size = kernel_size
         self.stride = stride
         self.padding = padding
-        self.weights = Tensor.randn(out_channels, in_channels, kernel_size, kernel_size)
-        self.bias = Tensor.zeros(self.out_channels) if bias else None 
-        self._parameters = self.add_params((self.weights, self.bias))
 
     def forward(self, x):
-        return x.conv2d(self.weights, self.bias, padding=self.padding, stride=self.stride)
-'''
+        return x.avgpool2d(self.kernel_size, self.stride, self.padding)
 
 class MaxPool2d(Module):
-    def __init__(self, kernel_size=2, stride=2):
+    def __init__(self, kernel_size=2, stride=2, padding=0):
         super().__init__()
         self.kernel_size = kernel_size
         self.stride = stride
+        self.padding = padding
 
     def forward(self, x):
-        return x.maxpool2d(self.kernel_size, self.stride)
-
+        return x.maxpool2d(self.kernel_size, self.stride, self.padding)
 
 class ScaledDotProductAttention(Module):
     def __init__(self, embed_dim, num_heads, dropout):

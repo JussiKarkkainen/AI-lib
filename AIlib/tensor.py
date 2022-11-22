@@ -159,13 +159,11 @@ class Tensor:
     
     def maxpool2d(self, kernel_size, stride, padding=0):
         self = self._reshape_conv()
-        return Tensor.Pool2d(self, kernel_size=kernel_size, stride=stride, padding=padding, pooltype="max")
+        return Tensor.MaxPool2d(self, kernel_size=kernel_size, stride=stride, padding=padding)
     
-    '''
     def avgpool2d(self, kernel_size, stride=1, padding=0):
         self = self._reshape_conv()
-        return Tensor.Pool2d(self, kernel_size=kernel_size, stride=stride, padding=padding, pooltype="avg")
-    '''
+        return Tensor.AvgPool2d(self, kernel_size=kernel_size, stride=stride, padding=padding)
     
     def conv2d(self, w, padding=0, stride=1):
         # Inputs to Corr2d needs to be of shape: input=DxCxHxW, kernel=NKxCxHKxWK
