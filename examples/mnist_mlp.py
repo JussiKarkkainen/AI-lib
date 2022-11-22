@@ -6,6 +6,7 @@ import AIlib.nn as nn
 from AIlib.transform import transform
 import AIlib.nn.optim as optim
 import matplotlib.pyplot as plt
+# Used for dataloading
 import torch
 from torchvision import datasets, transforms
 from AIlib.nn.module import wrap_method
@@ -19,11 +20,7 @@ def load_dataset():
                                             download=True, transform=transformn)
     trainloader = torch.utils.data.DataLoader(trainset, batch_size=batch_size,
                                               shuffle=True, num_workers=2)
-    testset = datasets.MNIST(root='./data', train=False,
-                                           download=True, transform=transformn)
-    testloader = torch.utils.data.DataLoader(testset, batch_size=batch_size,
-                                             shuffle=False, num_workers=2)
-    
+    # Random inputs with same shape as actual data to initialize model params
     x_init, y_init = Tensor.zeros((256, 784)), Tensor.zeros((256,))
     return trainloader, x_init, y_init 
 

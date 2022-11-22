@@ -3,7 +3,6 @@ from AIlib.tensor import Tensor
 from AIlib.autograd import grad
 import AIlib.nn as nn
 from AIlib.transform import transform
-import AIlib.nn.optim as optim
 import matplotlib.pyplot as plt
 from AIlib.nn.module import wrap_method
 
@@ -32,7 +31,7 @@ def net_fn(x):
 
 def main():
     network = transform(net_fn)
-    optimizer = optim.sgd(0.003)
+    optimizer = nn.optim.sgd(0.003)
     
     def loss(params, X, y):
         out = network.apply(params, X)
