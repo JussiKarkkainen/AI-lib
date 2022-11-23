@@ -117,17 +117,27 @@ class MaxPool2d(Module):
         return x.maxpool2d(self.kernel_size, self.stride, self.padding)
 
 class ScaledDotProductAttention(Module):
-    def __init__(self, embed_dim, num_heads, dropout):
+    def __init__(self, num_heads, dropout):
         super().__init__()
-        pass
+        self.embed_dims = embed_dims
+        self.num_heades = num_heads
+        self.dropout = dropout
 
-    def __call__(self, q, k, v, mask=None):
-        pass
+    def __call__(self, q, k, v)
+        d = q.shape[-1]
+        out = q.matmul(k.transpose(1, 2)) / Tensor(math_sqrt(d))
+        attention = out.softmax(-1)
+        out = attention.matmul(v)
+        return out, attention
 
 class MultiHeadAttention(Module):
-    def __init__(self, embed_dim, num_heads, dropout):
+    def __init__(self, num_heads, key_size):
         super().__init__()
-        pass
+        self.num_heads = num_heads
+        self.w_q = Linear(num_hiddens, bias=bias)
+        self.w_k = Linear(num_hiddens, bias=bias)
+        self.w_v = Linear(num_hiddens, bias=bias)
+        self.w_o = Linear(num_hiddens, bias=bias)
 
-    def __call__(self, q, k, v):
+    def __call__(self, q, k, v, mask=None):
         pass

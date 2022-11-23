@@ -2,7 +2,7 @@
 
 AIlib  is a minimal deep learning library capable of handling reverse mode automatic 
 differentiation. Despite its small size, it can be used to train more complicated Neural 
-Networks such as CNNs ```examples/resnet.py``` and transformers ```examples/transformer.py```
+Networks such as CNNs ```examples/resnet.py``` and transformers ```examples/ViT.py```
 
 
 ## Usage
@@ -76,6 +76,44 @@ Output of the trained model:
 <br>
 <img src="examples/Figure_1.png" width="400">
 <br><br>
+
+## Implementations details
+The Tensor class defined in ```AIlib/tensor.py``` defines methods for creating tensors 
+(arange(), randn(), normal(), etc) as well as most of the usual math operations found in 
+other NN libraries. All the math operations called in the Tensor class are implemented with
+the primitive ops defined in ```AIlib/ops.py```. During the forward pass, a graph of these 
+primitive operations is constructed, which is used to calculate gradients in the backward pass.
+
+Calculating gradients for a simple function:
+```python
+from AIlib.tensor import Tensor
+from AIlib.autograd import grad
+import torch
+
+# ---- AIlib ----
+a = Tensor([1, -3, 7])
+b = Tensor([5, 4, 3])
+
+def f(x, y):
+    return a.mul(b).sum().log()   # grad() only accepts scalar output functions
+
+# grad() returns the gradients, as well as the forward output
+grads, value = grad(f, argnums=(0, 1))(a, b) 
+print(grads)
+# Outputs: [<Tensor [0.35714287 0.2857143  0.21428573] with shape: (3,)>, <Tensor [ 0.07142857 -0.21428573  0.5] with shape: (3,)>]
+
+# ---- PyTorch ----
+c = torch.tensor([1., -3., 7.], requires_grad=True)
+d = torch.tensor([5., 4., 3.], requires_grad=True)
+
+out = c.mul(d).sum().log()
+out.backward()
+print(c.grad, d.grad)
+# Outputs: tensor([0.3571, 0.2857, 0.2143]) tensor([ 0.0714, -0.2143,  0.5000])
+```
+
+
+
 
 ## Note:
 AIlib still struggles with some numerical instability when training larger networks
