@@ -75,7 +75,7 @@ class Conv2d(Module):
         self.bias = bias
     
     @wrap_method
-    def forward(self, x):
+    def __call__(self, x):
         # Input of shape: DxCxHxW
         # Kernel is of shape: NKxCxHKxWK
         w_shape = ((self.out_channels, x.shape[1], self.kernel_size, self.kernel_size))
@@ -93,18 +93,24 @@ class BatchNorm2d(Module):
         super().__init__()
         pass
 
-    def forward(self, x):
+    def __call__(self, x):
         return x.batchnorm2d()
 
-class AvgPool2d(Module):
-    def __init__(self, kernel_size=2, stride=2, padding=0):
+class LayerNorm(Module):
+    def __init__(self, normalized_shape, eps=1e-5):
         super().__init__()
-        self.kernel_size = kernel_size
-        self.stride = stride
-        self.padding = padding
-
-    def forward(self, x):
-        return x.avgpool2d(self.kernel_size, self.stride, self.padding)
+        self.normalized_shape = normalized_shape
+        self.eps = eps
+    
+    @wrap_method
+    def __call__(self, x):
+        assert self.normalized_shape == x.shape[-len(self.normalized_shape):]
+        dims = tuple([-(i + 1) for i in range(len(self.normalized_shape))])
+        mean = x.mean(axis=dims, keepdim=True)
+        mean_x2 = (x ** 2).mean(axis=dims, keepdim=True)
+        var = mean_x2 - mean ** 2
+        x_norm = (x - mean) / Tensor.sqrt(var + self.eps)
+        return x_norm
 
 class MaxPool2d(Module):
     def __init__(self, kernel_size=2, stride=2, padding=0):
@@ -113,7 +119,8 @@ class MaxPool2d(Module):
         self.stride = stride
         self.padding = padding
 
-    def forward(self, x):
+    @wrap_method
+    def __call__(self, x):
         return x.maxpool2d(self.kernel_size, self.stride, self.padding)
 
 class ScaledDotProductAttention(Module):
@@ -122,8 +129,9 @@ class ScaledDotProductAttention(Module):
         self.embed_dims = embed_dims
         self.num_heades = num_heads
         self.dropout = dropout
-
-    def __call__(self, q, k, v)
+    
+    @wrap_method
+    def __call__(self, q, k, v):
         d = q.shape[-1]
         out = q.matmul(k.transpose(1, 2)) / Tensor(math_sqrt(d))
         attention = out.softmax(-1)
@@ -138,6 +146,7 @@ class MultiHeadAttention(Module):
         self.w_k = Linear(num_hiddens, bias=bias)
         self.w_v = Linear(num_hiddens, bias=bias)
         self.w_o = Linear(num_hiddens, bias=bias)
-
+    
+    @wrap_method
     def __call__(self, q, k, v, mask=None):
         pass

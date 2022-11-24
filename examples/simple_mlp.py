@@ -5,6 +5,7 @@ import AIlib.nn as nn
 from AIlib.transform import transform
 import matplotlib.pyplot as plt
 from AIlib.nn.module import wrap_method
+from tqdm import tqdm
 
 Xs = np.linspace(-3., 3., num=256)[:, None]
 X = Tensor(Xs)
@@ -33,13 +34,13 @@ def main():
     network = transform(net_fn)
     optimizer = nn.optim.sgd(0.003)
     
-    def loss(params, X, y):
+    def loss_fn(params, X, y):
         out = network.apply(params, X)
         loss = Tensor.mean((out - y) ** 2)
         return loss
 
     def update(params, X, y):
-        grads = grad(loss)(params, X, y)
+        grads, loss = grad(loss_fn)(params, X, y)
         params, opt_state = optimizer.update(grads, state.opt_state)
         return nn.TrainingState(params, opt_state)
 
@@ -47,7 +48,7 @@ def main():
     init_opt_state = optimizer.init(init_params)
     state = nn.TrainingState(params=init_params, opt_state=init_opt_state)
     
-    for epoch in range(1000):
+    for epoch in tqdm(range(1000)):
         state = update(state.params, X, y)
     
     plt.scatter(Xs, xy, label='Data')

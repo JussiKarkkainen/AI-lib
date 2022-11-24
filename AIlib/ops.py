@@ -228,20 +228,6 @@ class MaxPool2d(Function):
         dx = dx_reshaped.reshape(self.x.shape)
         return dx
 
-class AvgPool2d(Function):
-    def forward(self, x, kernel_size, stride, padding):
-        self.x = x
-        N, C, H, W = x.shape
-        assert kernel_size == stride, "Invalid parameters"
-        assert H % kernel_size == 0
-        assert W % kernel_size == 0 
-        self.x_reshape = x.transform_op(TransformOp.Reshape,
-                    (N, C, H // kernel_size, kernel_size, W // kernel_size, kernel_size))
-        
-
-    def backward(self, dout):
-        pass
-
 class Corr2d(Function):
     def forward(self, x, w, padding, stride):
         ''' Convolution on inputs with shapes:
@@ -273,21 +259,3 @@ class Corr2d(Function):
         x_grad = col2im_indices(x_grad_col, x.shape, self.h_K, self.w_K, padding=self.pad, stride=self.stride)
         return x_grad, w_grad
 
-
-class CrossEntropy(Function):
-    def forward(self, x, target):
-        logits_max = x.reduce_op(ReduceOp.Max, axis=1, keepdims=True)
-        sub = x.binary_op(BinaryOp.Sub, logits_max)
-        exp = sub.unary_op(UnaryOp.Exp)
-        softmax = exp.binary_op(BinaryOp.Div, exp.reduce_op(ReduceOp.Sum, axis=1, keepdims=True))
-        one = CpuBuffer.fromCpu(np.array(-1.))
-        norm = CpuBuffer.fromCpu(np.array(1e-7))
-        a = softmax.binary_op(BinaryOp.Add, norm).unary_op(UnaryOp.Log)
-        target = target.reshape(-1, 1)
-        mean = np.mean(target * softmax.binary_op(BinaryOp.Add, norm).unary_op(UnaryOp.Log))
-        self.save_for_backward(target, softmax)
-        return one.binary_op(BinaryOp.Mul, mean)
-    
-    def vjp(self, dout):
-        target, softmax = self.saved_inputs[0], self.saved_inputs[1]
-        out = softmax.binary_op(BinaryOp.Sub, target)
