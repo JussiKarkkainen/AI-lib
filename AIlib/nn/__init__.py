@@ -97,7 +97,7 @@ class BatchNorm2d(Module):
         return x.batchnorm2d()
 
 class LayerNorm(Module):
-    def __init__(self, normalized_shape, eps=1e-5):
+    def __init__(self, normalized_shape, eps=1e-5, elementwise_affine=True):
         super().__init__()
         self.normalized_shape = normalized_shape
         self.eps = eps
@@ -109,7 +109,11 @@ class LayerNorm(Module):
         mean = x.mean(axis=dims, keepdim=True)
         mean_x2 = (x ** 2).mean(axis=dims, keepdim=True)
         var = mean_x2 - mean ** 2
+        gain = get_parameter("b", self.normalized_shape)
+        bias = get_parameter("b", self.normalized_shape)
         x_norm = (x - mean) / Tensor.sqrt(var + self.eps)
+        if self.elementwise_affine:
+            x_norm = gain * x_norm + bias
         return x_norm
 
 class MaxPool2d(Module):
