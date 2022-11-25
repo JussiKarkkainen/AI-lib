@@ -38,7 +38,9 @@ def get_param(name, shape):
             frame.params[param_path] = Tensor.normal(0, 1, *shape)
         elif name == "b":
             frame.params[param_path] = Tensor.zeros(*shape)
-    
+        elif name == "g":
+            frame.params[param_path] = Tensor.zeros(*shape)
+
     if isinstance(frame.params, tuple):
         frame.params = frame.params[0]
     return frame.params[param_path]

@@ -109,8 +109,8 @@ class LayerNorm(Module):
         mean = x.mean(axis=dims, keepdim=True)
         mean_x2 = (x ** 2).mean(axis=dims, keepdim=True)
         var = mean_x2 - mean ** 2
-        gain = get_parameter("b", self.normalized_shape)
-        bias = get_parameter("b", self.normalized_shape)
+        gain = get_param("g", self.normalized_shape)
+        bias = get_param("b", self.normalized_shape)
         x_norm = (x - mean) / Tensor.sqrt(var + self.eps)
         if self.elementwise_affine:
             x_norm = gain * x_norm + bias
@@ -143,14 +143,27 @@ class ScaledDotProductAttention(Module):
         return out, attention
 
 class MultiHeadAttention(Module):
-    def __init__(self, num_heads, key_size):
+    def __init__(self, num_heads, d_model, dropout):
         super().__init__()
         self.num_heads = num_heads
         self.w_q = Linear(num_hiddens, bias=bias)
         self.w_k = Linear(num_hiddens, bias=bias)
         self.w_v = Linear(num_hiddens, bias=bias)
         self.w_o = Linear(num_hiddens, bias=bias)
-    
+        self.dropout = dropout
+        self.attention = ScaledDotProductAttention(num_heads, self.dropout) 
+
     @wrap_method
     def __call__(self, q, k, v, mask=None):
-        pass
+        seq_len, batch_size, _ = q.shape
+        queries = self.w_q(q)
+        keys = self.w_k(k)
+        values = self.w_v(v)
+        out = self.attention(queries, keys, values, mask)
+        output_concat = out.reshape(seq_len, batch_size, -1)
+        out = self.w_o(out)
+        return out
+
+
+
+
