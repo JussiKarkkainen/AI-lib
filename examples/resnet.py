@@ -1,9 +1,9 @@
-import AIlib.utils as utils
+import AIlib.nn.utils as utils
 from AIlib.tensor import Tensor
 from AIlib.autograd import grad
 import AIlib.nn as nn
 from AIlib.nn.module import wrap_method
-import AIlib.transform as transform
+from AIlib.transform import transform 
 # Used for dataloading
 import torch
 from torchvision import datasets, transforms
@@ -12,7 +12,7 @@ import tqdm
 def load_dataset():
     transformn = transforms.Compose(
             [transforms.ToTensor()])
-    batch_size = 256
+    batch_size = 16
     trainset = datasets.MNIST(root='./data', train=True,
                               download=True, transform=transform)
     trainloader = torch.utils.data.DataLoader(trainset, batch_size=batch_size,
@@ -20,23 +20,23 @@ def load_dataset():
     testset = datasets.MNIST(root='./data', train=False,
                               download=True, transform=transform)
     trainloader = torch.utils.data.DataLoader(testset, batch_size=batch_size,
-                                              shuffle=False num_workers=2)
+                                              shuffle=False, num_workers=2)
 
-   x_init, y_init = Tensor.zeros((256, 28, 28, 3)), Tensor.zeros((256,))
-   return trainloader, x_init, y_init
+    x_init, y_init = Tensor.zeros(16, 224, 224, 3), Tensor.zeros(16,)
+    return trainloader, x_init, y_init
 
 
 class ResNetBlock(nn.Module):
     def __init__(self, out_channels, stride=1, use_1x1_conv=False):
         super().__init__()
         self.conv1 = nn.Conv2d(out_channels=out_channels, kernel_size=3, stride=stride, padding=1)
-        self.bn1 = nn.BatchNorm2d()
-        self.conv2 = nn.Conv2d(out_channels=our_channels, kernel_size=3, stride=stride, padding=1)
+        self.bn1 = nn.BatchNorm2d(out_channels)
+        self.conv2 = nn.Conv2d(out_channels=out_channels, kernel_size=3, stride=stride, padding=1)
         if use_1x1_conv:
             self.conv3 = nn.Conv2d(out_channels=out_channels, kernel_size=1, stride=stride)
         else:
             self.conv3 = None
-        self.bn2 = nn.BatchNorm2d()
+        self.bn2 = nn.BatchNorm2d(out_channels)
 
     @wrap_method
     def __call__(self, x):
@@ -49,8 +49,8 @@ class ResNetBlock(nn.Module):
 class ResNet(nn.Module):
     def __init__(self):
         super().__init__()
-        self.conv1 = nn.Conv2d(out_channels=64, kernel_size=7, stride=2)
-        self.bn1 = nn.BatchNorm2d()
+        self.conv1 = nn.Conv2d(out_channels=64, kernel_size=7, stride=1, padding=3)
+        self.bn1 = nn.BatchNorm2d(64)
         self.l1 = self._make_layer(64, 2, first_layer=True)
         self.l2 = self._make_layer(128, 2)
         self.l3 = self._make_layer(256, 2)
@@ -61,9 +61,9 @@ class ResNet(nn.Module):
         layers = []
         for b in range(num_blocks):
             if b == 0 and not first_layer:
-                layers.append(ResNetBlock(channels, stride=2, use_1x1_conv=True)
+                layers.append(ResNetBlock(channels, stride=2, use_1x1_conv=True))
             else:
-            layers.append(ResNetBlock(channels))
+                layers.append(ResNetBlock(channels))
         return layers
 
     @wrap_method
@@ -80,11 +80,11 @@ class ResNet(nn.Module):
 def net_fn(x):
     return ResNet()(x)
 
-lossfn = nn.CategoricalCrossEntropy()
+lossfn = nn.CategoricalCrossEntropyLoss()
 
 def main():
     network = transform(net_fn)
-    optimizer = optim.sgd(1e-3)
+    optimizer = nn.optim.sgd(1e-3)
 
     def loss_fn(params, x, y):
         out = network.apply(params, x)
@@ -97,7 +97,8 @@ def main():
         return nn.TrainingState(params, opt_state), loss
 
     trainloader, x_init, y_init = load_dataset()
-    init_params = network.init(x_init, y_init)
+    init_params = network.init(x_init)
+    raise Exception("here")
     init_opt_state = optimizer.init(init_params)
     state = nn.TrainingState(params=init_params, opt_state=init_opt_state)
 

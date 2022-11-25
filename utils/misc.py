@@ -21,6 +21,8 @@ def argsort(seq):
 
 def get_im2col_indices(x_shape, field_height, field_width, padding, stride):
     N, C, H, W = x_shape
+    assert (H + 2 * padding - field_height) % stride == 0
+    assert (W + 2 * padding - field_height) % stride == 0
     out_height = (H + 2 * padding - field_height) / stride + 1
     out_width = (W + 2 * padding - field_width) / stride + 1
     i0 = np.repeat(np.arange(field_height), field_width)

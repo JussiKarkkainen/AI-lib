@@ -52,7 +52,7 @@ class BCELoss:
             return out.sum()
 
 class Linear(Module):
-    def __init__(self, out_features, bias=True, name=None):
+    def __init__(self, out_features, bias=True):
         super().__init__()
         self.out_features = out_features
         self.bias = bias
@@ -66,8 +66,8 @@ class Linear(Module):
         return ret
 
 class Conv2d(Module):
-    def __init__(self, out_channels, kernel_size, stride=1, padding=0, bias=True, name=None):
-        super().__init__(name=name)
+    def __init__(self, out_channels, kernel_size, stride=1, padding=0, bias=True):
+        super().__init__()
         self.out_channels = out_channels
         self.kernel_size = kernel_size
         self.stride = stride
@@ -78,11 +78,13 @@ class Conv2d(Module):
     def __call__(self, x):
         # Input of shape: DxCxHxW
         # Kernel is of shape: NKxCxHKxWK
+        x = x.reshape((x.shape[0], x.shape[3], x.shape[1], x.shape[2]))
         w_shape = ((self.out_channels, x.shape[1], self.kernel_size, self.kernel_size))
-        b_shape = (self.out_channels, 1) 
+        b_shape = (x.shape[0], self.out_channels, 1, 1) 
         w = get_param("w", w_shape)
         b = get_param("b", b_shape)
-        if bias:
+        print(w.shape, x.shape)
+        if self.bias:
             ret = x.conv2d(w, self.padding, self.stride) + b
         else:
             ret = x.conv2d(w, self.padding, self.stride)
