@@ -89,12 +89,37 @@ class Conv2d(Module):
         return ret
 
 class BatchNorm2d(Module):
-    def __init__(self):
+    def __init__(self, channels, eps=1e-5, momentum=0.1, affine=True, track_running_stats=True):
         super().__init__()
-        pass
+        self.channels = channels
+        self.eps = eps
+        self.momentum = momentum
+        self.affine = affine
+        self.track_running_stats = track_running_stats
+        self.exp_mean = Tensor.zeros(channels)
+        self.exp_var = Tensor.zeros(channels)
 
     def __call__(self, x):
-        return x.batchnorm2d()
+        batch_size = x.shape[0]
+        assert self.channels == x.shape[1]
+        x = x.reshape(batch_size, self.channels, -1)
+        if not self.track_running_average:
+            mean = x.mean((0, 2))
+            mean_x2 = (x ** 2).mean((0, 2))
+            var = mean_x2 - mean ** 2
+            self.exp_mean = (1 - self.momentum) * self.exp_mean + self.momentum * mean
+            self.exp_var = (1 - self.momentum) * self.exp_var + self.momentum * var
+        else:
+            mean = self.exp_mean
+            var = self.exp_var
+        x_norm = (x - mean.reshape(1, -1, 1)) / Tensor.sqrt(var + self.eps).reshape(1, -1, 1)
+        
+        scale = get_param("s", self.channels)
+        shift = get_param("sh", self.channels)
+        if self.affine:
+            x_norm = scale.reshape(1, -1, 1) * x_norm + shift.reshape(1, -1, 1)
+        
+        return x_norm.reshape(x.shape)
 
 class LayerNorm(Module):
     def __init__(self, normalized_shape, eps=1e-5, elementwise_affine=True):
