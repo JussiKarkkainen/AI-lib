@@ -169,7 +169,6 @@ class Tensor:
         # Inputs to Corr2d needs to be of shape: input=DxCxHxW, kernel=NKxCxHKxWK
         self = self._reshape_conv()
         w = w._reshape_conv()
-        print(self.shape, w.shape)
         return Tensor.Corr2d(self, w, padding=padding, stride=stride)
     
     def max(self, axis=None, keepdims=False):

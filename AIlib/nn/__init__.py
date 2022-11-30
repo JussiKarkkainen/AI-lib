@@ -83,7 +83,6 @@ class Conv2d(Module):
         b_shape = (x.shape[0], self.out_channels, 1, 1) 
         w = get_param("w", w_shape)
         b = get_param("b", b_shape)
-        print(w.shape, x.shape)
         if self.bias:
             ret = x.conv2d(w, self.padding, self.stride) + b
         else:
@@ -104,22 +103,22 @@ class BatchNorm2d(Module):
     def __call__(self, x):
         batch_size = x.shape[0]
         assert self.channels == x.shape[1]
-        x = x.reshape(batch_size, self.channels, -1)
-        if not self.track_running_average:
-            mean = x.mean((0, 2))
-            mean_x2 = (x ** 2).mean((0, 2))
+        x_tmp = x.reshape((batch_size, self.channels, -1))
+        if not self.track_running_stats:
+            mean = x_tmp.mean((0, 2))
+            mean_x2 = (x_tmp ** 2).mean((0, 2))
             var = mean_x2 - mean ** 2
             self.exp_mean = (1 - self.momentum) * self.exp_mean + self.momentum * mean
             self.exp_var = (1 - self.momentum) * self.exp_var + self.momentum * var
         else:
             mean = self.exp_mean
             var = self.exp_var
-        x_norm = (x - mean.reshape(1, -1, 1)) / Tensor.sqrt(var + self.eps).reshape(1, -1, 1)
+        x_norm = (x_tmp - mean.reshape((1, -1, 1))) / Tensor.sqrt(var + self.eps).reshape((1, -1, 1))
         
         scale = get_param("s", self.channels)
         shift = get_param("sh", self.channels)
         if self.affine:
-            x_norm = scale.reshape(1, -1, 1) * x_norm + shift.reshape(1, -1, 1)
+            x_norm = scale.reshape((1, -1, 1)) * x_norm + shift.reshape((1, -1, 1))
         
         return x_norm.reshape(x.shape)
 
