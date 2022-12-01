@@ -18,3 +18,8 @@ def load_mnist():
     test_labels = Tensor(np.frombuffer(test_labels, dtype=np.uint8)[8:])
 
     return train_img, train_labels, test_img, test_labels
+
+def load_tiny_shakespeare():
+    text = open('input.txt', 'r').read()
+    train_dataset = Dataset(text)
+    return train_dataset

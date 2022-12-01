@@ -189,7 +189,3 @@ class MultiHeadAttention(Module):
         output_concat = out.reshape(seq_len, batch_size, -1)
         out = self.w_o(out)
         return out
-
-
-
-
