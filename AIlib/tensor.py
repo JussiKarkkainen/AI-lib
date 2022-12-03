@@ -127,8 +127,14 @@ class Tensor:
     def sequential(self, l): 
         return functools.reduce(lambda x, f: f(x), l, self)
     
+    def dropout(self, prob=0.5):
+        mask = np.asarray(np.random.binomial(1, 1.0-prob, size=self.shape), dtype=self.dtype)
+        return self * Tensor(mask)
+
     def relu(self):
         return Tensor.ReLU(self)
+    def gelu(self):
+        return 0.5 * self * (1.0 + Tensor.tanh(math.sqrt(2.0 / math.pi) * (self + 0.044715 * Tensor.pow(self, 3.0))))
     def exp(self):
         return Tensor.Exp(self)
     def log(self):

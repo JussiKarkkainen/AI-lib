@@ -2,7 +2,8 @@ import os
 import sys
 import numpy as np
 import gzip
-from core.tensor import Tensor
+from AIlib.tensor import Tensor
+from dataset.dataset import Dataset
 
 def load_mnist():
     train_img = gzip.open("../dataset/mnist/train-images-idx3-ubyte.gz").read()
@@ -20,6 +21,6 @@ def load_mnist():
     return train_img, train_labels, test_img, test_labels
 
 def load_tiny_shakespeare():
-    text = open('input.txt', 'r').read()
+    text = open('../dataset/tiny_shakespeare/input.txt', 'r').read()
     train_dataset = Dataset(text)
     return train_dataset
