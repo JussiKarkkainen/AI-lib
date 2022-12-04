@@ -19,4 +19,4 @@ class Dataset():
         x = Tensor(dix[:-1])
         y = Tensor(dix[1:])
         return x, y
-
+    

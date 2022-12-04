@@ -2,10 +2,12 @@ from AIlib.tensor import Tensor
 from collections import OrderedDict
 from typing import NamedTuple, Any
 import warnings
+import math
 import numpy as np
 from AIlib.transform import get_param
 from AIlib.nn.module import Module, wrap_method
 import AIlib.nn.optim as optim
+from AIlib.nn.utils import one_hot
 
 class TrainingState(NamedTuple):
     params: Any
@@ -125,9 +127,10 @@ class BatchNorm2d(Module):
 class LayerNorm(Module):
     def __init__(self, normalized_shape, eps=1e-5, elementwise_affine=True):
         super().__init__()
-        self.normalized_shape = normalized_shape
+        self.normalized_shape = np.array([normalized_shape])
         self.eps = eps
-    
+        self.elementwise_affine = elementwise_affine
+
     @wrap_method
     def __call__(self, x):
         assert self.normalized_shape == x.shape[-len(self.normalized_shape):]
@@ -135,8 +138,8 @@ class LayerNorm(Module):
         mean = x.mean(axis=dims, keepdim=True)
         mean_x2 = (x ** 2).mean(axis=dims, keepdim=True)
         var = mean_x2 - mean ** 2
-        gain = get_param("g", self.normalized_shape)
-        bias = get_param("b", self.normalized_shape)
+        gain = get_param("g", *self.normalized_shape)
+        bias = get_param("b", *self.normalized_shape)
         x_norm = (x - mean) / Tensor.sqrt(var + self.eps)
         if self.elementwise_affine:
             x_norm = gain * x_norm + bias
@@ -153,31 +156,42 @@ class MaxPool2d(Module):
     def __call__(self, x):
         return x.maxpool2d(self.kernel_size, self.stride, self.padding)
 
-class ScaledDotProductAttention(Module):
-    def __init__(self, num_heads, dropout):
+class Embedding(Module):
+    def __init__(self, num_embeddings, embedding_dim):
         super().__init__()
-        self.embed_dims = embed_dims
-        self.num_heades = num_heads
-        self.dropout = dropout
+        self.num_embeddings = num_embeddings
+        self.embedding_dim = embedding_dim
+
+    @wrap_method
+    def __call__(self, x):
+        x = utils.one_hot(x, self.num_embeddings)
+        w = get_param("w", (self.num_embeddings, self.embedding_dim))
+        return x.matmul(w)
+
+class ScaledDotProductAttention(Module):
+    def __init__(self):
+        super().__init__()
     
     @wrap_method
-    def __call__(self, q, k, v):
+    def __call__(self, q, k, v, mask=None):
         d = q.shape[-1]
-        out = q.matmul(k.transpose(1, 2)) / Tensor(math_sqrt(d))
-        attention = out.softmax(-1)
+        scores = q.matmul(k.transpose((0, 2, 1))) / Tensor(math.sqrt(d))
+        if mask is not None:
+            scores *= mask
+        attention = scores.softmax(-1)
         out = attention.matmul(v)
-        return out, attention
+        return out
 
 class MultiHeadAttention(Module):
     def __init__(self, num_heads, d_model, dropout):
         super().__init__()
         self.num_heads = num_heads
-        self.w_q = Linear(num_hiddens, bias=bias)
-        self.w_k = Linear(num_hiddens, bias=bias)
-        self.w_v = Linear(num_hiddens, bias=bias)
-        self.w_o = Linear(num_hiddens, bias=bias)
+        self.w_q = Linear(d_model)
+        self.w_k = Linear(d_model)
+        self.w_v = Linear(d_model)
+        self.w_o = Linear(d_model)
+        self.attention = ScaledDotProductAttention()
         self.dropout = dropout
-        self.attention = ScaledDotProductAttention(num_heads, self.dropout) 
 
     @wrap_method
     def __call__(self, q, k, v, mask=None):
@@ -186,6 +200,6 @@ class MultiHeadAttention(Module):
         keys = self.w_k(k)
         values = self.w_v(v)
         out = self.attention(queries, keys, values, mask)
-        output_concat = out.reshape(seq_len, batch_size, -1)
-        out = self.w_o(out)
+        output_concat = out.reshape((seq_len, batch_size, -1))
+        out = self.w_o(out).dropout(self.dropout)
         return out

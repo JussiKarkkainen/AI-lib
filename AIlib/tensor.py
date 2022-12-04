@@ -115,9 +115,6 @@ class Tensor:
         s = e.sum(axis=-1, keepdims=True)
         return f - s.log()
     
-    def cross_entropy(self, target):
-        return Tensor.CrossEntropy(self, Tensor(target))
-
     def flatten(self, start_dim=1, end_dim=-1):
         flat_axis = list(self.shape[start_dim:end_dim])
         flat_axis.append(self.shape[end_dim])
