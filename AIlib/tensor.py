@@ -89,16 +89,6 @@ class Tensor:
         return self + (-x)
     def tanh(self):
         return 2. * ((2. * self).sigmoid()) - 1.
-    def sigmoid(self):
-        # Numerically stable sigmoid, taken from cs231n
-        pos_mask = (self.data >= 0)
-        neg_mask = (self.data < 0)
-        z = Tensor.zeros(self.shape)
-        z.data[pos_mask] = Tensor.exp(Tensor(-self.data[pos_mask])).data
-        z.data[neg_mask] = Tensor.exp(Tensor(self.data[neg_mask])).data
-        top = Tensor.ones(self.shape)
-        top[neg_mask] = z[neg_mask]
-        return Tensor(top / (1 + z))
     def sqrt(self):
         return self.pow(0.5)
     def mean(self, axis=None, keepdim=False):
@@ -163,10 +153,6 @@ class Tensor:
     def maxpool2d(self, kernel_size, stride, padding=0):
         self = self._reshape_conv()
         return Tensor.MaxPool2d(self, kernel_size=kernel_size, stride=stride, padding=padding)
-    
-    def avgpool2d(self, kernel_size, stride=1, padding=0):
-        self = self._reshape_conv()
-        return Tensor.AvgPool2d(self, kernel_size=kernel_size, stride=stride, padding=padding)
     
     def conv2d(self, w, padding=0, stride=1):
         # Inputs to Corr2d needs to be of shape: input=DxCxHxW, kernel=NKxCxHKxWK
