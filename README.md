@@ -2,8 +2,8 @@
 
 AIlib  is a minimal deep learning library capable of handling reverse mode automatic 
 differentiation. Despite its small size, it can be used to train more complicated Neural 
-Networks such as CNNs ```examples/resnet.py``` and transformers ```examples/ViT.py```
-
+Networks such as CNNs ```examples/resnet.py``` and transformers ```examples/ViT.py``` 
+(altough very slowly)
 
 ## Usage
 ```
@@ -15,7 +15,7 @@ python3 setup.py develop
 ## Example
 The high level NN library is modeled after [dm/haiku](https://github.com/deepmind/dm-haiku)
 where Neural Networks are defined in an object oriented manner, but are then transformed to 
-pure functions with ```transform()```
+pure functions with ```transform()```, so that the gradients of those functions can be evaluated.
 Below is an implementation of a simple Multilayered Perceptron trained on a toy dataset.
 See ```examples/``` for more
 
@@ -113,8 +113,8 @@ print(c.grad, d.grad)
 ```
 
 
-
-
 ## Note:
-AIlib still struggles with some numerical instability when training larger networks
+AIlib still struggles with some numerical instability when training larger networks.
+Speed or memory efficiency was not the goal with this project so training larger models
+will take a lot of time.
 
