@@ -17,7 +17,7 @@ def change_vars(arg, argnums, val):
         return tuple(ret)
 
 def argsort(seq):
-    return sorted(range(len(seg)), key=seq.__getitem__)
+    return sorted(range(len(seq)), key=seq.__getitem__)
 
 def get_im2col_indices(x_shape, field_height, field_width, padding, stride):
     N, C, H, W = x_shape
@@ -55,4 +55,29 @@ def col2im_indices(cols, x_shape, field_height=3, field_width=3, padding=1, stri
     if padding == 0:
         return x_padded
     return x_padded[:, :, padding:-padding, padding:-padding]
+
+
+def col2im_6d_inner(cols,x_padded, N, C, H, W, HH, WW,
+                       out_h, out_w, pad, stride):
+    for n in range(N):
+        for c in range(C):
+            for hh in range(HH):
+                for ww in range(WW):
+                    for h in range(out_h):
+                        for w in range(out_w):
+                            x_padded[n, c, stride * h + hh, stride * w + ww] += cols[c, hh, ww, n, h, w]
+
+
+def col2im_6d(cols, N, C, H, W, HH, WW, pad, stride):
+    x = np.empty((N, C, H, W), dtype=cols.dtype)
+    out_h = (H + 2 * pad - HH) // stride + 1
+    out_w = (W + 2 * pad - WW) // stride + 1
+    x_padded = np.zeros((N, C, H + 2 * pad, W + 2 * pad), dtype=cols.dtype)
+
+    col2im_6d_inner(cols, x_padded, N, C, H, W, HH, WW, out_h, out_w, pad, stride)
+
+    if pad > 0:
+        return x_padded[:, :, pad:-pad, pad:-pad]
+    return x_padded
+
 

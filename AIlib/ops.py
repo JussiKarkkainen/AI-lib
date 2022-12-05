@@ -1,7 +1,7 @@
 from enum import Enum
 import numpy as np
 from AIlib.tensor import Tensor
-from utils.misc import argsort, im2col_indices, col2im_indices
+from utils.misc import argsort, im2col_indices, col2im_indices, col2im_6d
 from typing import Union, Tuple, NamedTuple, Any
 from AIlib.backend.cpu_ops import BinaryOp, UnaryOp, ReduceOp, TransformOp 
 from AIlib.backend.cpu_ops import CpuBuffer
@@ -108,7 +108,7 @@ class Div(Function):
         a = self.saved_inputs[0]
         y_grad = dout.binary_op(BinaryOp.Div, b) 
         tmp = dout.binary_op(BinaryOp.Mul, a)
-        tmp1 = CpuBuffer.fromCpu(np.array(2.), device="cpu")
+        tmp1 = CpuBuffer.fromCpu(np.array(2.))
         tmp2 = b.binary_op(BinaryOp.Pow, tmp1)
         x_grad = tmp.binary_op(BinaryOp.Div, tmp2) 
         return y_grad, x_grad
@@ -141,6 +141,7 @@ class Sum(Function):
     
     def vjp(self, dout):
         if dout.ndim == 1: dout = dout.transform_op(TransformOp.Reshape, (dout.shape[0], 1))
+        if dout.ndim == 2 and self.x.ndim == 3: dout = dout.transform_op(TransformOp.Reshape, (dout.shape[0], dout.shape[1], 1))
         return dout.binary_op(BinaryOp.Mul, CpuBuffer.ones_like(self.x))
         #return dout.transform_op(TransformOp.Expand, self.shape)
 
@@ -193,72 +194,106 @@ class Matmul(Function):
         return x.binary_op(BinaryOp.Matmul, y)
 
     def vjp(self, dout):
-        shapex = self.saved_inputs[1].shape
-        shapey = self.saved_inputs[0].shape
-        x_t = self.saved_inputs[1].transform_op(TransformOp.Transpose)
+        x, y = self.saved_inputs[1], self.saved_inputs[0]
+        shapex = x.shape
+        shapey = y.shape
+        if x.ndim == 3:
+            x_t = x.transform_op(TransformOp.Transpose, (0, 2, 1))
+        else:
+            x_t = x.transform_op(TransformOp.Transpose)
         x_grad = dout.binary_op(BinaryOp.Matmul, x_t)
-        y_t = self.saved_inputs[0].transform_op(TransformOp.Transpose)
+        if y.ndim == 3:
+            y_t = y.transform_op(TransformOp.Transpose, (0, 2, 1))
+        else:
+            y_t = y.transform_op(TransformOp.Transpose)
         y_grad = y_t.binary_op(BinaryOp.Matmul, dout)
         return x_grad, y_grad
 
 class MaxPool2d(Function):
     def forward(self, x, kernel_size, stride, padding):
-        self.x = x
         N, C, H, W = x.shape
-        assert kernel_size == stride, "Invalid parameters"
-        assert H % kernel_size == 0
-        assert W % kernel_size == 0 
-        self.x_reshape = x.transform_op(TransformOp.Reshape, 
-                    (N, C, H // kernel_size, kernel_size, W // kernel_size, kernel_size))
-        out = self.x_reshape.reduce_op(ReduceOp.Max, axis=(3,), keepdims=False)
-        out = out.reduce_op(ReduceOp.Max, axis=(4,), keepdims=False)
-        self.out = out.transform_op(TransformOp.Reshape, (N, C, out.shape[-1], out.shape[-2])) 
-        return self.out
+        self.x = x
+        pool_height, pool_width = kernel_size, kernel_size 
+        self.kernel_size = kernel_size
+        self.stride = stride
+        assert (H - pool_height) % stride == 0, "Invalid height"
+        assert (W - pool_width) % stride == 0, "Invalid width"
 
+        out_height = (H - pool_height) // stride + 1
+        out_width = (W - pool_width) // stride + 1
+
+        x_split = x.transform_op(TransformOp.Reshape, (N * C, 1, H, W))
+        x_cols = im2col_indices(x_split, pool_height, pool_width, padding=0, stride=stride)
+        x_cols_argmax = np.argmax(x_cols, axis=0)
+        x_cols_max = x_cols[x_cols_argmax, np.arange(x_cols.shape[1])]
+        x_cols_max = CpuBuffer.fromCpu(x_cols_max)
+        out = x_cols_max.transform_op(TransformOp.Reshape, (out_height, out_width, N, C))
+        out = out.transform_op(TransformOp.Transpose, (2, 3, 0, 1))
+
+        self.x_cols = x_cols
+        self.x_cols_argmax = x_cols_argmax
+        return out
+    
     def vjp(self, dout):
-        dx_reshaped = np.zeros_like(self.x_reshape)
-        out_newaxis = self.out[:, :, :, np.newaxis, :, np.newaxis]
-        mask = self.x_reshape == out_newaxis
-        mask = np.array(mask)
-        dout_newaxis = dout[:, :, :, np.newaxis, :, np.newaxis]
-        dout_broadcast, _ = np.broadcast_arrays(dout_newaxis.data, dx_reshaped)
-        dout_broadcast = dout_broadcast.astype(np.int32)
-        dx_reshaped[mask] = dout_broadcast[mask]
-        dx_reshaped /= np.sum(mask, axis=(3, 5), keepdims=True)
-        dx = dx_reshaped.reshape(self.x.shape)
+        x, x_cols, x_cols_argmax = self.x, self.x_cols, self.x_cols_argmax,
+        N, C, H, W = x.shape
+        pool_height, pool_width = self.kernel_size, self.kernel_size 
+        stride = self.stride 
+
+        dout_reshaped = dout.transform_op(TransformOp.Transpose, (2, 3, 0, 1)).flatten()
+        dx_cols = CpuBuffer.zeros_like(x_cols)
+        dx_cols[x_cols_argmax, np.arange(dx_cols.shape[1])] = dout_reshaped
+        dx = col2im_indices(
+             dx_cols, (N * C, 1, H, W), pool_height, pool_width, padding=0, stride=stride
+        )
+        dx = CpuBuffer.fromCpu(dx)
+        dx = dx.transform_op(TransformOp.Reshape, x.shape)
+
         return dx
 
 class Corr2d(Function):
     def forward(self, x, w, padding, stride):
-        ''' Convolution on inputs with shapes:
-        x -> input = DxCxHxW
-        w -> kernel = NKxCxHKxWk
-        '''
-        self.save_for_backward(x, w)
+        self.x, self.w, self.padding, self.stride = x, w, padding, stride
         N, C, H, W = x.shape
-        self.pad, self.stride = padding, stride
-        self.n_K, self.c_K, self.h_K, self.w_K = w.shape
-        assert (W + 2 * self.pad - self.w_K) % stride == 0
-        assert (H + 2 * self.pad - self.h_K) % stride == 0
-        out_height = int((H + 2*padding - self.h_K) // stride + 1)
-        out_width = int((W + 2*padding - self.w_K) // stride + 1)
-        out = np.zeros((N, self.n_K, out_height, out_width))
-        self.X_cols = im2col_indices(x, self.h_K, self.w_K, padding, stride)
-        W_cols = w.transform_op(TransformOp.Reshape, (self.n_K, -1))
-        out = W_cols.binary_op(BinaryOp.Matmul, self.X_cols)
-        out = out.reshape((self.n_K, out_height, out_width, N))
-        out = out.transform_op(TransformOp.Transpose, (3, 0, 1, 2))
+        F, _, HH, WW = w.shape
+        x_padded = np.pad(x, ((0, 0), (0, 0), (padding, padding), (padding, padding)), mode="constant")
+        H += 2 * padding
+        W += 2 * padding
+        out_h = (H - HH) // stride + 1
+        out_w = (W - WW) // stride + 1
+        shape = (C, HH, WW, N, out_h, out_w)
+        strides = (H * W, W, 1, C * H * W, stride * W, stride)
+        strides = x.itemsize * np.array(strides)
+        x_stride = np.lib.stride_tricks.as_strided(x_padded, shape=shape, strides=strides)
+        x_cols = np.ascontiguousarray(x_stride)
+        self.x_cols = x_cols
+        x_cols.shape = (C * HH * WW, N * out_h * out_w)
+        res = w.transform_op(TransformOp.Reshape, (F, -1))
+        res = res.binary_op(BinaryOp.Matmul, x_cols)
+        res.shape = (F, N, out_h, out_w)
+        out = res.transform_op(TransformOp.Transpose, (1, 0, 2, 3))
+        out = np.ascontiguousarray(out)
         return out
-        
+
     def vjp(self, dout):
-        x, w = self.saved_inputs[0], self.saved_inputs[1]
-        dout_T = dout.transform_op(TransformOp.Transpose, (1, 2, 3, 0))
-        dout_reshape = dout_T.transform_op(TransformOp.Reshape, (self.n_K, -1))
-        self.X_cols = CpuBuffer.fromCpu(self.X_cols)
-        w_grad = dout_reshape.binary_op(BinaryOp.Matmul, (self.X_cols.transform_op(TransformOp.Transpose, None)))
-        w_grad = w_grad.reshape(w.shape)
-        w_reshape = w.transform_op(TransformOp.Reshape, (self.n_K, -1))
-        x_grad_col = w_reshape.transform_op(TransformOp.Transpose, None).binary_op(BinaryOp.Matmul, dout_reshape)
-        x_grad = col2im_indices(x_grad_col, x.shape, self.h_K, self.w_K, padding=self.pad, stride=self.stride)
-        return x_grad, w_grad
+        x = self.x
+        w = self.w
+        x_cols = self.x_cols
+        stride, pad = self.stride, self.padding 
+        N, C, H, W = x.shape
+        F, _, HH, WW = w.shape
+        _, _, out_h, out_w = dout.shape
+        dout_reshaped = dout.transform_op(TransformOp.Transpose, (1, 0, 2, 3))
+        dout_reshaped = dout_reshaped.transform_op(TransformOp.Reshape, (F, -1))
+        dw = dout_reshaped.binary_op(BinaryOp.Matmul, x_cols.T)
+        dw = dw.transform_op(TransformOp.Reshape, w.shape)
+        dx_cols = w.transform_op(TransformOp.Reshape, (F, -1))
+        dx_cols = dx_cols.transform_op(TransformOp.Transpose)
+        dx_cols = dx_cols.binary_op(BinaryOp.Matmul, dout_reshaped)
+        dx_cols.shape = (C, HH, WW, N, out_h, out_w)
+        dx = col2im_6d(dx_cols, N, C, H, W, HH, WW, pad, stride)
+        return dx, dw
+
+
+
 

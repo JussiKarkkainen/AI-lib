@@ -62,29 +62,35 @@ class Linear(Module):
     def __call__(self, x):
         self.in_features = x.shape[-1]
         w = get_param("w", (self.in_features, self.out_features))
-        b = get_param("b", (self.out_features,))
-        ret = x.matmul(w) + b if self.bias else x.matmul(w)
+        if self.bias:
+            b = get_param("b", (self.out_features,))
+            ret = x.matmul(w) + b
+        else:
+            ret = x.matmul(w)
         return ret
 
 class Conv2d(Module):
-    def __init__(self, out_channels, kernel_size, stride=1, padding=0, bias=True):
+    def __init__(self, out_channels, kernel_size, stride=1, padding=0, bias=True, channel_first=True):
         super().__init__()
         self.out_channels = out_channels
         self.kernel_size = kernel_size
         self.stride = stride
         self.padding = padding
         self.bias = bias
-    
+        self.channel_first = True
+
     @wrap_method
     def __call__(self, x):
         # Input of shape: DxCxHxW
         # Kernel is of shape: NKxCxHKxWK
-        x = x.reshape((x.shape[0], x.shape[3], x.shape[1], x.shape[2]))
+        if not self.channel_first:
+            # Reshape from DxHxWxC to DxCxHxW
+            x = x.reshape((x.shape[0], x.shape[3], x.shape[1], x.shape[2]))
         w_shape = ((self.out_channels, x.shape[1], self.kernel_size, self.kernel_size))
         b_shape = (x.shape[0], self.out_channels, 1, 1) 
         w = get_param("w", w_shape)
-        b = get_param("b", b_shape)
         if self.bias:
+            b = get_param("b", b_shape)
             ret = x.conv2d(w, self.padding, self.stride) + b
         else:
             ret = x.conv2d(w, self.padding, self.stride)
@@ -100,11 +106,13 @@ class BatchNorm2d(Module):
         self.track_running_stats = track_running_stats
         self.exp_mean = Tensor.zeros(channels)
         self.exp_var = Tensor.zeros(channels)
-
+    
+    @wrap_method
     def __call__(self, x):
         batch_size = x.shape[0]
         assert self.channels == x.shape[1]
         x_tmp = x.reshape((batch_size, self.channels, -1))
+        # TODO: Differentiate between training and inference
         if not self.track_running_stats:
             mean = x_tmp.mean((0, 2))
             mean_x2 = (x_tmp ** 2).mean((0, 2))
@@ -116,9 +124,9 @@ class BatchNorm2d(Module):
             var = self.exp_var
         x_norm = (x_tmp - mean.reshape((1, -1, 1))) / Tensor.sqrt(var + self.eps).reshape((1, -1, 1))
         
-        scale = get_param("s", self.channels)
-        shift = get_param("sh", self.channels)
         if self.affine:
+            scale = get_param("s", self.channels)
+            shift = get_param("sh", self.channels)
             x_norm = scale.reshape((1, -1, 1)) * x_norm + shift.reshape((1, -1, 1))
         
         return x_norm.reshape(x.shape)
@@ -144,14 +152,13 @@ class LayerNorm(Module):
             x_norm = gain * x_norm + bias
         return x_norm
 
-class MaxPool2d(Module):
+class MaxPool2d:
     def __init__(self, kernel_size=2, stride=2, padding=0):
         super().__init__()
         self.kernel_size = kernel_size
         self.stride = stride
         self.padding = padding
-
-    @wrap_method
+    
     def __call__(self, x):
         return x.maxpool2d(self.kernel_size, self.stride, self.padding)
 
@@ -167,11 +174,10 @@ class Embedding(Module):
         w = get_param("w", (self.num_embeddings, self.embedding_dim))
         return x.matmul(w)
 
-class ScaledDotProductAttention(Module):
+class ScaledDotProductAttention:
     def __init__(self):
         super().__init__()
     
-    @wrap_method
     def __call__(self, q, k, v, mask=None):
         d = q.shape[-1]
         scores = q.matmul(k.transpose((0, 2, 1))) / Tensor(math.sqrt(d))

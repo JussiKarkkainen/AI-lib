@@ -33,6 +33,10 @@ class CpuBuffer(np.ndarray):
     @staticmethod
     def ones_like(x):
         return np.ones_like(x).view(CpuBuffer)
+    
+    @staticmethod
+    def zeros_like(x):
+        return np.zeros_like(x).view(CpuBuffer)
 
     def unary_op(x, op):
         return (UnaryOpDict[str(op).split('.')[1]])(x).view(CpuBuffer)

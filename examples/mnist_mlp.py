@@ -21,7 +21,7 @@ def load_dataset():
     trainloader = torch.utils.data.DataLoader(trainset, batch_size=batch_size,
                                               shuffle=True, num_workers=2)
     # Random inputs with same shape as actual data to initialize model params
-    x_init, y_init = Tensor.zeros((256, 784)), Tensor.zeros((256,))
+    x_init, y_init = Tensor.zeros(256, 784), Tensor.zeros(256)
     return trainloader, x_init, y_init 
 
 class MLP(nn.Module):
@@ -68,7 +68,7 @@ def main():
         epoch_loss = 0
         for X, y in train_loader:
             X = Tensor(np.array(X)).flatten().detach()
-            y = Tensor(one_hot(y, 10)).detach()
+            y = Tensor(one_hot(Tensor(np.array(y)), 10)).detach()
             state, loss = update(state.params, X, y)
             epoch_loss += loss
         

@@ -6,6 +6,7 @@ from AIlib.nn.module import wrap_method
 import AIlib.nn as nn
 from typing import NamedTuple
 import numpy as np
+from tqdm import tqdm
 
 def get_dataset(batch_size=32):
     dataset = load_tiny_shakespeare()
@@ -84,11 +85,12 @@ def main():
     state = nn.TrainingState(params=init_params, opt_state=init_opt_state)
     
     print("Starting Training")
-    for epoch in range(10):
+    for epoch in tqdm(range(10)):
         epoch_loss = 0
         for X, y in train_loader:
-            X = Tensor(np.expand_dims(X.data, 0))
+            X = Tensor(np.expand_dims(X.data, 0)).detach()
             y = Tensor(np.expand_dims(y.data, 0))
+            y = nn.utils.one_hot(y, Config().vocab_size).detach()
             state, loss = update_weights(state.params, X, y)
             epoch_loss += loss
     
