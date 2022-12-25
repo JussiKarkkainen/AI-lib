@@ -9,7 +9,7 @@ Networks such as CNNs ```examples/resnet.py``` and transformers ```examples/tran
 ```
 git clone git@github.com:JussiKarkkainen/AI-lib.git
 cd AIlib
-python3 setup.py develop
+pip3 install -e .
 ```
 
 ## Example
