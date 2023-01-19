@@ -79,10 +79,10 @@ Output of the trained model:
 
 ## Implementations details
 The Tensor class defined in ```AIlib/tensor.py``` defines methods for creating tensors 
-(arange(), randn(), normal(), etc) as well as most of the usual math operations found in 
-other NN libraries. All the math operations called in the Tensor class are implemented with
-the primitive ops defined in ```AIlib/ops.py```. During the forward pass, a graph of these 
-primitive operations is constructed, which is used to calculate gradients in the backward pass.
+(arange(), randn(), normal(), etc) as well as activation functions and other math operations.
+These operations use the same set of primitive ops defined in ```AIlib/ops.py````. During forward 
+evaluation, a graph of all primitive ops used is created and used for gradient calculations.
+The code for backpropagation is in ```AIlib/autograd.py``` 
 
 Calculating gradients for a simple function:
 ```python
@@ -112,9 +112,5 @@ print(c.grad, d.grad)
 # Outputs: tensor([0.3571, 0.2857, 0.2143]) tensor([ 0.0714, -0.2143,  0.5000])
 ```
 
-
 ## Note:
 AIlib still struggles with some numerical instability when training larger networks.
-Speed or memory efficiency was not the goal with this project so training larger models
-will take a lot of time.
-
