@@ -2,7 +2,7 @@
 
 AIlib  is a minimal deep learning library capable of handling reverse mode automatic 
 differentiation. Despite its small size, it can be used to train more complicated Neural 
-Networks such as CNNs ```examples/resnet.py``` and transformers ```examples/transformer.py``` 
+Networks such as CNNs ```examples/LeNet.py``` and transformers ```examples/transformer.py``` 
 (altough very slowly)
 
 ## Usage

@@ -11,6 +11,10 @@ import torch
 from torchvision import datasets, transforms
 from tqdm import tqdm
 
+#################################################################################################
+## Not fully functional example yet, because of the current implementation of Conv2d in ops.py ##
+#################################################################################################
+
 def load_dataset():
     transformn = transforms.Compose([transforms.Resize((96, 96)), transforms.ToTensor()])
     batch_size = 16
