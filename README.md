@@ -74,7 +74,7 @@ def main():
 ```
 Output of the trained model:
 <br>
-<img src="docs/Figure_1.png" width="400">
+<img src="img/Figure_1.png" width="400">
 <br><br>
 
 ## Implementations details
