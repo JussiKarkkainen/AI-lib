@@ -80,7 +80,7 @@ Output of the trained model:
 ## Implementations details
 The Tensor class defined in ```AIlib/tensor.py``` defines methods for creating tensors 
 (arange(), randn(), normal(), etc) as well as activation functions and other math operations.
-These operations use the same set of primitive ops defined in ```AIlib/ops.py````. During forward 
+These operations use the same set of primitive ops defined in ```AIlib/ops.py```. During forward 
 evaluation, a graph of all primitive ops used is created and used for gradient calculations.
 The code for backpropagation is in ```AIlib/autograd.py``` 
 
