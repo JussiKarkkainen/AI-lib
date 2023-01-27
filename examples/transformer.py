@@ -79,7 +79,7 @@ def main():
         return nn.TrainingState(params, opt_state)
 
     train_loader, (X_init, y_init) = get_dataset()
-    X_init, y_init = Tensor(np.expand_dims(X_init.data, 0)), Tensor(np.expand_dims(y_init.data, 0))
+    X_init = Tensor(np.expand_dims(X_init.data, 0))
     init_params = network.init(X_init)
     init_opt_state = optimizer.init(init_params)
     state = nn.TrainingState(params=init_params, opt_state=init_opt_state)

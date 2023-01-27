@@ -174,37 +174,35 @@ class Embedding(Module):
         w = get_param("w", (self.num_embeddings, self.embedding_dim))
         return x.matmul(w)
 
-class ScaledDotProductAttention:
-    def __init__(self):
-        super().__init__()
-    
-    def __call__(self, q, k, v, mask=None):
-        d = q.shape[-1]
-        scores = q.matmul(k.transpose((0, 2, 1))) / Tensor(math.sqrt(d))
-        if mask is not None:
-            scores *= mask
-        attention = scores.softmax(-1)
-        out = attention.matmul(v)
-        return out
-
 class MultiHeadAttention(Module):
     def __init__(self, num_heads, d_model, dropout):
         super().__init__()
         self.num_heads = num_heads
-        self.w_q = Linear(d_model)
-        self.w_k = Linear(d_model)
+        self.d_k = d_model // num_heads
+        self.d_model = d_model
+        self.w_q = Linear(d_model, bias=False)
+        self.w_k = Linear(d_model, bias=False)
         self.w_v = Linear(d_model)
         self.w_o = Linear(d_model)
-        self.attention = ScaledDotProductAttention()
+        self.scale = 1 / math.sqrt(self.d_k)
         self.dropout = dropout
 
     @wrap_method
     def __call__(self, q, k, v, mask=None):
-        seq_len, batch_size, _ = q.shape
-        queries = self.w_q(q)
-        keys = self.w_k(k)
-        values = self.w_v(v)
-        out = self.attention(queries, keys, values, mask)
-        output_concat = out.reshape((seq_len, batch_size, -1))
-        out = self.w_o(out).dropout(self.dropout)
-        return out
+        batch_size, seq_len, n_embed = q.shape
+        q = self.w_q(q)
+        k = self.w_k(k)
+        v = self.w_v(v)
+       
+        Q = q.reshape((batch_size, -1, self.num_heads, self.d_k)).transpose((0, 2, 1, 3))
+        K = k.reshape((batch_size, -1, self.num_heads, self.d_k)).transpose((0, 2, 1, 3))
+        V = v.reshape((batch_size, -1, self.num_heads, self.d_k)).transpose((0, 2, 1, 3))
+        
+        scores = Q @ K.transpose((0, 1, 3, 2))
+        scores *= self.scale
+        attn = scores.softmax(dim=-1)
+        x = attn.dropout(self.dropout).matmul(V)
+        x = x.transpose((0, 2, 1, 3))
+        x = x.reshape((batch_size, -1, self.d_model))
+        x = self.w_o(x)
+        return x
