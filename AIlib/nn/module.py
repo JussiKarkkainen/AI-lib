@@ -1,16 +1,5 @@
 import AIlib.transform as tf
 
-# Module metaclass will be used later to get rid of @wrap_method
-class ModuleMetaClass(type):
-    def __new__(name):
-        method_names = []
-        cls = super(ModuleMetaClass).__new__(name)
-
-        for method_name in method_names:
-            method = getattr(cls, name)
-            method = wrap_method(name, method)
-        return cls
-
 # Base class for all models
 class Module:
     
