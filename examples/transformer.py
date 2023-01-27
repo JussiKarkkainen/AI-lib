@@ -76,7 +76,7 @@ def main():
     def update_weights(params, X, y):
         grads, loss = grad(loss_fn)(params, X, y)
         params, opt_state = optimizer.update(grads, state.opt_state)
-        return nn.TrainingState(params, opt_state)
+        return nn.TrainingState(params, opt_state), loss
 
     train_loader, (X_init, y_init) = get_dataset()
     X_init = Tensor(np.expand_dims(X_init.data, 0))
@@ -85,9 +85,9 @@ def main():
     state = nn.TrainingState(params=init_params, opt_state=init_opt_state)
     
     print("Starting Training")
-    for epoch in tqdm(range(10)):
+    for epoch in range(10):
         epoch_loss = 0
-        for X, y in train_loader:
+        for X, y in tqdm(train_loader):
             X = Tensor(np.expand_dims(X.data, 0)).detach()
             y = Tensor(np.expand_dims(y.data, 0))
             y = nn.utils.one_hot(y, Config().vocab_size).detach()
