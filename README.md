@@ -7,7 +7,7 @@ Networks such as CNNs ```examples/LeNet.py``` and transformers ```examples/trans
 ## Usage
 ```
 git clone git@github.com:JussiKarkkainen/AI-lib.git
-cd AIlib
+cd AI-lib
 pip3 install -e .
 ```
 
