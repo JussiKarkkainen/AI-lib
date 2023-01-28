@@ -199,11 +199,15 @@ class Matmul(Function):
         shapey = y.shape
         if x.ndim == 3:
             x_t = x.transform_op(TransformOp.Transpose, (0, 2, 1))
+        elif x.ndim == 4:
+            x_t = x.transform_op(TransformOp.Transpose, (0, 1, 3, 2))
         else:
             x_t = x.transform_op(TransformOp.Transpose)
         x_grad = dout.binary_op(BinaryOp.Matmul, x_t)
         if y.ndim == 3:
             y_t = y.transform_op(TransformOp.Transpose, (0, 2, 1))
+        elif x.ndim == 4:
+            y_t = y.transform_op(TransformOp.Transpose, (0, 1, 3, 2))
         else:
             y_t = y.transform_op(TransformOp.Transpose)
         y_grad = y_t.binary_op(BinaryOp.Matmul, dout)

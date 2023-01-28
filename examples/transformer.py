@@ -17,23 +17,28 @@ class Config(NamedTuple):
     n_head = 3
     n_embed = 48
     vocab_size = 65
-    block_size = 256
+    block_size = 128
     dropout = 0.1
 
 class TransformerBlock(nn.Module):
     def __init__(self, config):
         super().__init__()
-        self.ln_1 = nn.LayerNorm(config.n_embed)
-        self.attn = nn.MultiHeadAttention(config.n_head, config.n_embed, dropout=0.1)
-        self.ln_2 = nn.LayerNorm(config.n_embed)
-        self.mlp = [nn.Linear(4*config.n_embed), nn.Linear(config.n_embed)]
         self.config = config
+        self.mask = self.subsequent_mask()
+        self.ln_1 = nn.LayerNorm(config.n_embed)
+        self.attn = nn.MultiheadAttention(config.n_head, config.n_embed, dropout=0.1, mask=self.mask)
+        self.ln_2 = nn.LayerNorm(config.n_embed)
+        self.mlp = [nn.Linear(4*config.n_embed), nn.GELU(), nn.Linear(config.n_embed)]
+    
+    def subsequent_mask(self):
+        mask = Tensor.tril(Tensor.ones((self.config.block_size, self.config.block_size))).reshape((1, 1, self.config.block_size, self.config.block_size))
+        return mask
 
     @wrap_method
     def __call__(self, x):
         ln1 = self.ln_1(x)
         x = x + self.attn(ln1, ln1, ln1)
-        x = self.ln_2(x).sequential(self.mlp).gelu().dropout(self.config.dropout)
+        x = x + self.ln_2(x).sequential(self.mlp).dropout(self.config.dropout)
         return x
 
 class Transformer(nn.Module):

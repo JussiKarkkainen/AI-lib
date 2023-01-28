@@ -152,6 +152,20 @@ class LayerNorm(Module):
             x_norm = gain * x_norm + bias
         return x_norm
 
+class ReLU(Module):
+    def __init__(self):
+        super().__init__()
+
+    def __call__(self, x):
+        return x.relu()
+
+class GELU(Module):
+    def __init__(self):
+        super().__init__()
+
+    def __call__(self, x):
+        return x.gelu()
+
 class MaxPool2d:
     def __init__(self, kernel_size=2, stride=2, padding=0):
         super().__init__()
@@ -174,37 +188,31 @@ class Embedding(Module):
         w = get_param("w", (self.num_embeddings, self.embedding_dim))
         return x.matmul(w)
 
-class ScaledDotProductAttention:
-    def __init__(self):
-        super().__init__()
-    
-    def __call__(self, q, k, v, mask=None):
-        d = q.shape[-1]
-        scores = q.matmul(k.transpose((0, 2, 1))) / Tensor(math.sqrt(d))
-        if mask is not None:
-            scores *= mask
-        attention = scores.softmax(-1)
-        out = attention.matmul(v)
-        return out
-
-class MultiHeadAttention(Module):
-    def __init__(self, num_heads, d_model, dropout):
+class MultiheadAttention(Module):
+    def __init__(self, num_heads, d_model, dropout, mask=None):
         super().__init__()
         self.num_heads = num_heads
+        self.head_size = d_model // num_heads
+        self.mask = mask 
+        self.d_model = d_model
         self.w_q = Linear(d_model)
         self.w_k = Linear(d_model)
         self.w_v = Linear(d_model)
         self.w_o = Linear(d_model)
-        self.attention = ScaledDotProductAttention()
         self.dropout = dropout
-
+    
     @wrap_method
-    def __call__(self, q, k, v, mask=None):
-        batch_size, seq_len, n_embed = q.shape
-        queries = self.w_q(q)
-        keys = self.w_k(k)
-        values = self.w_v(v)
-        out = self.attention(queries, keys, values, mask)
-        output_concat = out.reshape((seq_len, batch_size, -1))
-        out = self.w_o(out).dropout(self.dropout)
+    def __call__(self, q, k, v):
+        batch_size, seq_len = q.shape[0], q.shape[1]
+        Q = self.w_q(q).reshape((batch_size, self.num_heads, seq_len, self.head_size))
+        K = self.w_k(k).reshape((batch_size, self.num_heads, seq_len, self.head_size))
+        V = self.w_v(v).reshape((batch_size, self.num_heads, seq_len, self.head_size))
+        scores = Q.matmul(K.transpose((0, 1, 3, 2))) / math.sqrt(self.head_size)
+        if self.mask is not None:
+            scores = scores + Tensor((self.mask.data == 0)) * -1e-9
+        scores = scores.softmax(dim=-1)
+        attention = scores.matmul(V)        
+        attention = attention.reshape((batch_size, seq_len, self.d_model))
+        out = self.w_o(attention)
         return out
+

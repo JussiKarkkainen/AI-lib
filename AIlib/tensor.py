@@ -81,6 +81,14 @@ class Tensor:
     def ones_like(cls, tensor):
         return cls(np.ones_like(tensor, dtype=np.float32))
 
+    @classmethod
+    def triu(cls, tensor, k=0):
+        return cls(np.triu(tensor.data, k=k).astype(np.float32))
+    
+    @classmethod
+    def tril(cls, tensor, k=0):
+        return cls(np.tril(tensor.data, k=k).astype(np.float32))
+
     def __neg__(self):
         return self * -1.
     def __sub__(self, x):
