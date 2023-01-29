@@ -64,9 +64,9 @@ def main():
     state = nn.TrainingState(params=init_params, opt_state=init_opt_state)
     
     print("Starting training")
-    for epoch in tqdm(range(5)):
+    for epoch in range(5):
         epoch_loss = 0
-        for X, y in train_loader:
+        for X, y in tqdm(train_loader):
             X = Tensor(np.array(X)).flatten().detach()
             y = Tensor(one_hot(Tensor(np.array(y)), 10)).detach()
             state, loss = update(state.params, X, y)

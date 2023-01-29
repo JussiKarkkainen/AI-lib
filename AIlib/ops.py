@@ -101,7 +101,7 @@ class Mul(Function):
 class Div(Function):
     def forward(self, x, y):
         self.save_for_backward(x, y)
-        return x.binary_op(BinaryOp.Div, y)
+        return x.binary_op(BinaryOp.Div, y.binary_op(BinaryOp.Add, 1e-16))
 
     def vjp(self, dout):
         b = self.saved_inputs[1]
@@ -120,15 +120,15 @@ class Pow(Function):
         return out
 
     def vjp(self, dout):
-        x, y, powxy = self.saved_inputs
+        x, y, out = self.saved_inputs
         grad_x, grad_y = None, None
         if self.saved_inputs[0].any():
-            t = powxy.binary_op(BinaryOp.Div, x.binary_op(BinaryOp.Add, 1e-16))
+            t = out.binary_op(BinaryOp.Div, x.binary_op(BinaryOp.Add, 1e-16))
             tmp = y.binary_op(BinaryOp.Mul, t)
             grad_x = dout.binary_op(BinaryOp.Mul, tmp)
         if self.saved_inputs[1].any():
             tmp = x.unary_op(UnaryOp.Log)
-            tmp = tmp.binary_op(BinaryOp.Mul, powxy) 
+            tmp = tmp.binary_op(BinaryOp.Mul, out) 
             grad_y = dout.binary_op(BinaryOp.Mul, tmp)
         return grad_x, grad_y 
 
@@ -143,7 +143,6 @@ class Sum(Function):
         if dout.ndim == 1: dout = dout.transform_op(TransformOp.Reshape, (dout.shape[0], 1))
         if dout.ndim == 2 and self.x.ndim == 3: dout = dout.transform_op(TransformOp.Reshape, (dout.shape[0], dout.shape[1], 1))
         return dout.binary_op(BinaryOp.Mul, CpuBuffer.ones_like(self.x))
-        #return dout.transform_op(TransformOp.Expand, self.shape)
 
 class Max(Function):
     def forward(self, x, axis=None, keepdims=False):

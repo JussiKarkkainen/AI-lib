@@ -56,7 +56,7 @@ class Transformer(nn.Module):
         b, t = x.shape
         pos = Tensor(np.expand_dims(np.arange(0, t), 0))
         tok_embed = self.tok_embed(x)
-        pos_embed = self.pos_embed(x)
+        pos_embed = self.pos_embed(pos)
         x = (tok_embed + pos_embed).dropout(prob=0.1)
         x = x.sequential(self.block)
         x = self.ln(x)
@@ -71,11 +71,14 @@ lossfn = nn.CategoricalCrossEntropyLoss()
 
 def main():
     network = transform(net_fn)
-    optimizer = nn.optim.sgd(1e-3)
+    optimizer = nn.optim.sgd(3e-4)
 
     def loss_fn(params, X, y):
         out = network.apply(params, X)
         loss = lossfn(out, y)
+        print(loss)
+        if np.isnan(loss.data):
+            raise Exception("nan")
         return loss
 
     def update_weights(params, X, y):
@@ -92,7 +95,7 @@ def main():
     print("Starting Training")
     for epoch in range(10):
         epoch_loss = 0
-        for X, y in tqdm(train_loader):
+        for X, y in train_loader:
             X = Tensor(np.expand_dims(X.data, 0)).detach()
             y = Tensor(np.expand_dims(y.data, 0))
             y = nn.utils.one_hot(y, Config().vocab_size).detach()
